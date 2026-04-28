@@ -101,7 +101,7 @@ export function NavUser({
             <DropdownMenuItem>
               <LogOutIcon
               />
-              <Link to={"/logout"}>
+              <Link to={"/login"}>
                 Log out
               </Link>
 
