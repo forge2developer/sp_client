@@ -16,6 +16,8 @@ import { Outlet, useLocation, Link } from "react-router-dom"
 import React from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+import { navigationData } from "@/constants/navigation"
+
 export default function DashboardLayout() {
   const location = useLocation()
   const pathname = location.pathname
@@ -29,34 +31,67 @@ export default function DashboardLayout() {
 
   // Define breadcrumb structure based on route
   const getBreadcrumbs = () => {
+    // 1. Check if it's the dashboard itself
+    if (pathname === "/dashboard") {
+      return [{ label: "Dashboard", isPage: true }]
+    }
+
     const crumbs: { label: string; href?: string; isPage?: boolean }[] = [
       { label: "Home", href: "/dashboard" },
     ]
 
-    if (pathname === "/dashboard") {
-      crumbs.push({ label: "Dashboard", isPage: true })
-    } else if (pathname === "/inventory_listing") {
-      crumbs.push({ label: "Inventory", href: "#" })
-      crumbs.push({ label: "Inventory Listing", isPage: true })
-    } else if (pathname === "/add_inventory") {
-      crumbs.push({ label: "Inventory", href: "#" })
-      crumbs.push({ label: "Add Inventory", isPage: true })
-    } else {
-      // Dynamic fallback for any other routes
+    // 2. Automatic Scan: Check Sidebar "navMain" (Groups with sub-items)
+    let found = false
+    navigationData.navMain.forEach((group) => {
+      // Check if current page is the top-level hub
+      if (group.url === pathname) {
+        crumbs.push({ label: group.title, isPage: true })
+        found = true
+      }
+      
+      const activeSubItem = group.items?.find((sub) => sub.url === pathname)
+      if (activeSubItem) {
+        crumbs.push({ label: group.title, href: group.url || "#" }) // Parent Category
+        crumbs.push({ label: activeSubItem.title, isPage: true }) // Current Page
+        found = true
+      }
+    })
+
+    // 3. Automatic Scan: Check Sidebar "projects" (Single items)
+    if (!found) {
+      const projectMatch = navigationData.projects.find((p) => p.url === pathname)
+      if (projectMatch) {
+        crumbs.push({ label: projectMatch.name, isPage: true })
+        found = true
+      }
+    }
+
+    // 4. Special Case: Project Showcase (sub-page of Inventory Listing)
+    if (!found && pathname.startsWith("/project_showcase/")) {
+      crumbs.push({ label: "Inventory", href: "/inventory_hub" })
+      crumbs.push({ label: "Inventory listing", href: "/inventory_listing" })
+      crumbs.push({ label: "Project Showcase", isPage: true })
+      found = true
+    }
+
+    // 5. Dynamic Fallback: If not in sidebar, analyze URL segments
+    if (!found) {
       const segments = pathname.split("/").filter(Boolean)
       segments.forEach((segment, index) => {
         const isLast = index === segments.length - 1
         crumbs.push({
           label: formatLabel(segment),
           isPage: isLast,
-          href: isLast ? undefined : `/${segments.slice(0, index + 1).join("/")}`
+          href: isLast ? undefined : `/${segments.slice(0, index + 1).join("/")}`,
         })
       })
     }
+
     return crumbs
   }
 
   const breadcrumbs = getBreadcrumbs()
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -94,4 +129,3 @@ export default function DashboardLayout() {
     </SidebarProvider>
   )
 }
-

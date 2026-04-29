@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Plus,
   Trash2,
@@ -15,6 +15,10 @@ import {
   MapPin,
   CornerDownRight,
   MousePointer2,
+  Settings2,
+  Maximize2,
+  LayoutGrid,
+  Info,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,18 +26,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import api, { type Phase, type Plot } from "@/lib/api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuLabel,
+  ContextMenuSeparator,
+} from "@/components/ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import api, { type Phase, type Plot, type Project } from "@/lib/api";
 
 type Step = "basic" | "phases" | "review";
 
 interface ImageFile {
-  file: File;
+  file?: File;
   preview: string;
+  isExisting?: boolean;
 }
 
 export function AddInventory() {
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEditMode = !!editId;
+
   const [step, setStep] = useState<Step>("basic");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(isEditMode);
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,8 +75,49 @@ export function AddInventory() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
 
-  // Corner plot selection mode
+  const organization = "SP_PROMOTERS";
+
+  // Selection Modes
   const [cornerSelectMode, setCornerSelectMode] = useState(false);
+  const [plotEditMode, setPlotEditMode] = useState(false);
+  const [selectedPlots, setSelectedPlots] = useState<Set<string>>(new Set());
+
+  // Bulk Edit Values
+  const [bulkSize, setBulkSize] = useState("");
+  const [bulkFacing, setBulkFacing] = useState("");
+
+  // Single Edit Modal
+  const [editingPlot, setEditingPlot] = useState<{ phIdx: number; plIdx: number; plot: Plot } | null>(null);
+  const [singleSize, setSingleSize] = useState("");
+  const [singleFacing, setSingleFacing] = useState("");
+
+  // ─── Fetch for Edit Mode ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (isEditMode && editId) {
+      fetchProjectForEdit();
+    }
+  }, [isEditMode, editId]);
+
+  const fetchProjectForEdit = async () => {
+    try {
+      setFetching(true);
+      const response = await api.get(`/projects/${editId}?organization=${organization}`);
+      const p: Project = response.data.data;
+      
+      setName(p.name);
+      setLocation(p.location);
+      setPhases(p.phases || []);
+      
+      if (p.layoutImages) {
+        setImages(p.layoutImages.map(img => ({ preview: img, isExisting: true })));
+      }
+    } catch (error) {
+      console.error("Error fetching project for edit:", error);
+      alert("Failed to load project details for editing.");
+    } finally {
+      setFetching(false);
+    }
+  };
 
   // ─── Image Handlers ───────────────────────────────────────────────────────
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,34 +129,24 @@ export function AddInventory() {
 
     for (let i = 0; i < Math.min(files.length, remaining); i++) {
       const file = files[i];
-
-      // Validate size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        alert(`"${file.name}" exceeds 10MB limit and was skipped.`);
-        continue;
-      }
-
-      // Validate type
-      if (!file.type.startsWith("image/")) {
-        alert(`"${file.name}" is not an image and was skipped.`);
-        continue;
-      }
+      if (file.size > 10 * 1024 * 1024) continue;
+      if (!file.type.startsWith("image/")) continue;
 
       newImages.push({
         file,
         preview: URL.createObjectURL(file),
+        isExisting: false
       });
     }
 
     setImages((prev) => [...prev, ...newImages]);
-
-    // Reset input so same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeImage = (index: number) => {
     setImages((prev) => {
-      URL.revokeObjectURL(prev[index].preview);
+      const img = prev[index];
+      if (!img.isExisting) URL.revokeObjectURL(img.preview);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -115,10 +178,7 @@ export function AddInventory() {
 
   const addBulkPlots = (phaseIndex: number) => {
     const count = parseInt(plotCountInputs[phaseIndex] || "0");
-    if (count <= 0 || count > 500) {
-      alert("Enter a valid number of plots (1-500).");
-      return;
-    }
+    if (count <= 0 || count > 500) return;
 
     setPhases((prev) => {
       const updated = [...prev];
@@ -140,21 +200,100 @@ export function AddInventory() {
       updated[phaseIndex] = phase;
       return updated;
     });
-
-    // Clear input
     setPlotCountInputs((prev) => ({ ...prev, [phaseIndex]: "" }));
   };
 
-  // ─── Corner Plot Toggle ───────────────────────────────────────────────────
-  const toggleCornerPlot = (phaseIndex: number, plotIndex: number) => {
-    if (!cornerSelectMode) return;
+  // ─── Plot Action Handlers ─────────────────────────────────────────────────
+  const handlePlotClick = (phaseIndex: number, plotIndex: number) => {
+    const plot = phases[phaseIndex].plots[plotIndex];
+    
+    if (cornerSelectMode) {
+      setPhases((prev) => {
+        const updated = [...prev];
+        const ph = { ...updated[phaseIndex] };
+        const plots = [...ph.plots];
+        plots[plotIndex] = { ...plots[plotIndex], isCorner: !plots[plotIndex].isCorner };
+        ph.plots = plots;
+        updated[phaseIndex] = ph;
+        return updated;
+      });
+      return;
+    }
+
+    if (plotEditMode) {
+      setSelectedPlots((prev) => {
+        const next = new Set(prev);
+        if (next.has(plot.plotId)) next.delete(plot.plotId);
+        else next.add(plot.plotId);
+        return next;
+      });
+      return;
+    }
+  };
+
+  const openSingleEdit = (phIdx: number, plIdx: number, plot: Plot) => {
+    setEditingPlot({ phIdx, plIdx, plot });
+    setSingleSize(plot.size || "");
+    setSingleFacing(plot.facing || "");
+  };
+
+  const applySingleDetails = () => {
+    if (!editingPlot) return;
+    const { phIdx, plIdx } = editingPlot;
 
     setPhases((prev) => {
       const updated = [...prev];
+      const ph = { ...updated[phIdx] };
+      const plots = [...ph.plots];
+      plots[plIdx] = { ...plots[plIdx], size: singleSize, facing: singleFacing };
+      ph.plots = plots;
+      updated[phIdx] = ph;
+      return updated;
+    });
+
+    setEditingPlot(null);
+  };
+
+  const applyBulkDetails = () => {
+    if (selectedPlots.size === 0) return;
+
+    setPhases((prev) => {
+      return prev.map((phase) => ({
+        ...phase,
+        plots: phase.plots.map((plot) => {
+          if (selectedPlots.has(plot.plotId)) {
+            return {
+              ...plot,
+              size: bulkSize || plot.size,
+              facing: bulkFacing !== "none" ? bulkFacing : plot.facing,
+            };
+          }
+          return plot;
+        }),
+      }));
+    });
+
+    setSelectedPlots(new Set());
+    setBulkSize("");
+    setBulkFacing("");
+    setPlotEditMode(false);
+  };
+
+  const removePlot = (phaseIndex: number, plotIndex: number) => {
+    setPhases((prev) => {
+      const updated = [...prev];
       const phase = { ...updated[phaseIndex] };
-      const plots = [...phase.plots];
-      plots[plotIndex] = { ...plots[plotIndex], isCorner: !plots[plotIndex].isCorner };
-      phase.plots = plots;
+      const remainingPlots = phase.plots.filter((_, i) => i !== plotIndex);
+      
+      phase.plots = remainingPlots.map((plot, idx) => {
+        const newNum = idx + 1;
+        return {
+          ...plot,
+          plotNumber: `${newNum}`,
+          plotId: `${phase.phaseId}-P${newNum}`
+        };
+      });
+
       updated[phaseIndex] = phase;
       return updated;
     });
@@ -168,43 +307,107 @@ export function AddInventory() {
       const formData = new FormData();
       formData.append("name", name);
       formData.append("location", location);
-      formData.append("organization", "SP_PROMOTERS");
+      formData.append("organization", organization);
       formData.append("phases", JSON.stringify(phases));
 
-      // Attach images
-      images.forEach((img) => {
-        formData.append("images", img.file);
+      const existingImages = images.filter(img => img.isExisting).map(img => img.preview);
+      formData.append("existingImages", JSON.stringify(existingImages));
+
+      images.filter(img => !img.isExisting).forEach((img) => {
+        if (img.file) formData.append("images", img.file);
       });
 
-      await api.post("/projects", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      if (isEditMode) {
+        await api.put(`/projects/${editId}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        await api.post("/projects", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
 
-      // Cleanup previews
-      images.forEach((img) => URL.revokeObjectURL(img.preview));
-
+      images.filter(img => !img.isExisting).forEach((img) => URL.revokeObjectURL(img.preview));
       navigate("/inventory_listing");
     } catch (error: any) {
-      console.error("Error creating project:", error);
-      alert(error?.response?.data?.message || "Failed to create project.");
+      console.error("Error saving project:", error);
+      alert(error?.response?.data?.message || "Failed to save project.");
     } finally {
       setLoading(false);
     }
   };
 
   const totalPlots = phases.reduce((acc, p) => acc + p.plots.length, 0);
-  const totalCorner = phases.reduce((acc, p) => acc + p.plots.filter((pl) => pl.isCorner).length, 0);
+
+  if (fetching) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <p className="text-muted-foreground animate-pulse">Loading project details...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-12">
+    <div className="flex flex-col gap-6 pb-12">
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPlot} onOpenChange={() => setEditingPlot(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" /> Edit Plot {editingPlot?.plot.plotNumber}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="size" className="text-right">SQFT</Label>
+              <Input
+                id="size"
+                value={singleSize}
+                onChange={(e) => setSingleSize(e.target.value)}
+                className="col-span-3"
+                placeholder="e.g. 1200"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="facing" className="text-right">FACING</Label>
+              <div className="col-span-3">
+                <Select value={singleFacing} onValueChange={setSingleFacing}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select facing" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="North">North</SelectItem>
+                    <SelectItem value="South">South</SelectItem>
+                    <SelectItem value="East">East</SelectItem>
+                    <SelectItem value="West">West</SelectItem>
+                    <SelectItem value="North-East">North-East</SelectItem>
+                    <SelectItem value="North-West">North-West</SelectItem>
+                    <SelectItem value="South-East">South-East</SelectItem>
+                    <SelectItem value="South-West">South-West</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={applySingleDetails} className="w-full font-bold">Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/inventory_listing")}>
           <ArrowLeft className="h-4 w-4 mr-2" /> Back
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Add New Project</h1>
-          <p className="text-sm text-muted-foreground">Set up your plotted development project.</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {isEditMode ? "Edit Project" : "Add New Project"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isEditMode ? `Update details for ${name}` : "Set up your plotted development project."}
+          </p>
         </div>
       </div>
 
@@ -214,7 +417,7 @@ export function AddInventory() {
         {(["basic", "phases", "review"] as Step[]).map((s, i) => (
           <div key={s} className={`z-10 flex flex-col items-center gap-2 ${step === s ? "text-primary" : "text-muted-foreground"}`}>
             <div className={`h-10 w-10 rounded-full flex items-center justify-center border-2 bg-background transition-all ${
-              step === s ? "border-primary font-bold shadow-md shadow-primary/20 scale-110" : "border-muted"
+              step === s ? "border-primary font-bold scale-110" : "border-muted"
             }`}>
               {i + 1}
             </div>
@@ -225,11 +428,9 @@ export function AddInventory() {
         ))}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          STEP 1: Basic Info + Image Upload
-          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* STEP 1: Basic Info + Image Upload */}
       {step === "basic" && (
-        <Card className="shadow-lg border-primary/10">
+        <Card className="border-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" /> Project Details
@@ -237,7 +438,6 @@ export function AddInventory() {
             <CardDescription>Enter the basic information and upload layout images.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Name & Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Project Name <span className="text-destructive">*</span></Label>
@@ -261,13 +461,12 @@ export function AddInventory() {
 
             <Separator />
 
-            {/* Image Upload */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-base font-semibold">Layout Images</Label>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Upload up to 5 images (max 10MB each). JPG, PNG, or WebP.
+                    Upload up to 5 images (max 10MB each).
                   </p>
                 </div>
                 <Badge variant="outline" className="text-xs">
@@ -275,7 +474,6 @@ export function AddInventory() {
                 </Badge>
               </div>
 
-              {/* Image Preview Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {images.map((img, idx) => (
                   <div key={idx} className="relative aspect-square rounded-xl border-2 overflow-hidden group">
@@ -294,22 +492,16 @@ export function AddInventory() {
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                      <span className="text-white text-[10px] font-medium truncate block">
-                        {img.file.name}
-                      </span>
-                      <span className="text-white/70 text-[9px]">
-                        {(img.file.size / (1024 * 1024)).toFixed(1)} MB
-                      </span>
-                    </div>
+                    {img.isExisting && (
+                      <Badge className="absolute top-1 left-1 bg-primary text-white text-[8px] py-0 px-1">Current</Badge>
+                    )}
                   </div>
                 ))}
 
-                {/* Add Image Button */}
                 {images.length < 5 && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="aspect-square rounded-xl border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary cursor-pointer"
+                    className="aspect-square rounded-xl border-2 border-dashed border-primary/30 hover:border-primary transition-all flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-primary cursor-pointer"
                   >
                     <ImagePlus className="h-8 w-8" />
                     <span className="text-xs font-medium">Add Image</span>
@@ -338,30 +530,39 @@ export function AddInventory() {
         </Card>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          STEP 2: Phases & Plots (with corner selection)
-          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* STEP 2: Phases & Plots */}
       {step === "phases" && (
         <div className="space-y-6">
-          {/* Toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <Layers className="h-5 w-5" /> Phases & Plots
               </h2>
               <Badge variant="secondary">{totalPlots} Total Plots</Badge>
-              {totalCorner > 0 && (
-                <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30">
-                  <CornerDownRight className="h-3 w-3 mr-1" /> {totalCorner} Corner
-                </Badge>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
+                variant={plotEditMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setPlotEditMode(!plotEditMode);
+                  setCornerSelectMode(false);
+                  setSelectedPlots(new Set());
+                }}
+                className={plotEditMode ? "bg-primary hover:bg-primary/90 text-white" : ""}
+              >
+                <Settings2 className="h-4 w-4 mr-2" />
+                {plotEditMode ? "Done Editing" : "Bulk Edit Plots"}
+              </Button>
+              <Button
                 variant={cornerSelectMode ? "default" : "outline"}
                 size="sm"
-                onClick={() => setCornerSelectMode(!cornerSelectMode)}
-                className={cornerSelectMode ? "bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/30" : ""}
+                onClick={() => {
+                  setCornerSelectMode(!cornerSelectMode);
+                  setPlotEditMode(false);
+                  setSelectedPlots(new Set());
+                }}
+                className={cornerSelectMode ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}
               >
                 <MousePointer2 className="h-4 w-4 mr-2" />
                 {cornerSelectMode ? "Done Selecting" : "Select Corner Plots"}
@@ -372,24 +573,68 @@ export function AddInventory() {
             </div>
           </div>
 
-          {cornerSelectMode && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3 text-amber-800 text-sm">
-              <MousePointer2 className="h-5 w-5 flex-shrink-0" />
-              <span><strong>Corner Selection Mode:</strong> Click on any plot below to mark or unmark it as a corner plot. Corner plots are highlighted with a golden border.</span>
-            </div>
-          )}
+          {/* Bulk Edit Toolbar */}
+          {plotEditMode && (
+            <Card className="border-primary bg-primary/5">
+              <CardContent className="p-4 flex flex-wrap items-end gap-6">
+                <div className="flex-1 min-w-[200px] space-y-2">
+                  <Label className="text-xs font-bold uppercase text-primary">Selected Plots: {selectedPlots.size}</Label>
+                  <div className="text-sm text-muted-foreground italic">
+                    {selectedPlots.size === 0 ? "Click plots below to select them for bulk update." : "Updating size and facing for selected plots."}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-size" className="text-xs font-bold">SIZE (SQFT)</Label>
+                  <Input 
+                    id="bulk-size" 
+                    placeholder="e.g. 1200" 
+                    className="h-9 w-32 bg-background" 
+                    value={bulkSize}
+                    onChange={(e) => setBulkSize(e.target.value)}
+                  />
+                </div>
 
-          {phases.length === 0 && (
-            <Card className="border-dashed h-40 flex items-center justify-center">
-              <div className="text-center">
-                <Layers className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">No phases defined. Click "Add Phase" to begin.</p>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-facing" className="text-xs font-bold">FACING</Label>
+                  <Select value={bulkFacing} onValueChange={setBulkFacing}>
+                    <SelectTrigger id="bulk-facing" className="h-9 w-32 bg-background">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Keep Same</SelectItem>
+                      <SelectItem value="North">North</SelectItem>
+                      <SelectItem value="South">South</SelectItem>
+                      <SelectItem value="East">East</SelectItem>
+                      <SelectItem value="West">West</SelectItem>
+                      <SelectItem value="North-East">North-East</SelectItem>
+                      <SelectItem value="North-West">North-West</SelectItem>
+                      <SelectItem value="South-East">South-East</SelectItem>
+                      <SelectItem value="South-West">South-West</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  onClick={applyBulkDetails} 
+                  disabled={selectedPlots.size === 0 || (!bulkSize && !bulkFacing)}
+                  className="h-9 font-bold"
+                >
+                  Apply to {selectedPlots.size} Plots
+                </Button>
+              </CardContent>
             </Card>
           )}
 
+          {cornerSelectMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-3 text-amber-800 text-sm">
+              <MousePointer2 className="h-5 w-5 flex-shrink-0" />
+              <span><strong>Corner Selection Mode:</strong> Click on any plot below to mark or unmark it as a corner plot.</span>
+            </div>
+          )}
+
           {phases.map((phase, phIdx) => (
-            <Card key={phIdx} className="shadow-md border-l-4 border-l-primary overflow-hidden">
+            <Card key={phIdx} className="border-l-4 border-l-primary overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
@@ -402,9 +647,6 @@ export function AddInventory() {
                         onChange={(e) => updatePhaseName(phIdx, e.target.value)}
                         className="font-semibold text-lg h-9 border-transparent hover:border-input focus:border-input"
                       />
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {phase.plots.length} plots · {phase.plots.filter((p) => p.isCorner).length} corner
-                      </p>
                     </div>
                   </div>
                   <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removePhase(phIdx)}>
@@ -413,7 +655,6 @@ export function AddInventory() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Bulk Plot Input */}
                 <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-lg">
                   <Label className="text-sm font-medium whitespace-nowrap">Number of plots:</Label>
                   <Input
@@ -431,46 +672,90 @@ export function AddInventory() {
                   </Button>
                 </div>
 
-                {/* Plots Grid */}
-                {phase.plots.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/20 border border-green-500/30 inline-block" /> Available</span>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500/20 border-2 border-amber-500 inline-block" /> Corner Plot</span>
-                    </div>
-                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
-                      {phase.plots.map((plot, plIdx) => (
-                        <button
-                          key={plot.plotId}
-                          onClick={() => toggleCornerPlot(phIdx, plIdx)}
-                          className={`h-11 rounded-lg border-2 flex items-center justify-center text-xs font-bold transition-all ${
-                            cornerSelectMode ? "cursor-pointer hover:scale-110 hover:shadow-md" : "cursor-default"
-                          } ${
-                            plot.isCorner
-                              ? "bg-amber-500/15 text-amber-700 border-amber-500 shadow-sm shadow-amber-500/20"
-                              : "bg-green-500/10 text-green-700 border-green-500/20 hover:border-green-500/40"
-                          }`}
-                          title={`Plot ${plot.plotNumber}${plot.isCorner ? " (Corner)" : ""}`}
-                        >
-                          {plot.plotNumber}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {phase.plots.length === 0 && (
-                  <div className="p-6 text-center border-2 border-dashed rounded-lg bg-muted/20">
-                    <p className="text-muted-foreground text-sm">
-                      Enter the number of plots above and click "Generate Plots".
-                    </p>
-                  </div>
-                )}
+                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+                  {phase.plots.map((plot, plIdx) => {
+                    const isSelected = selectedPlots.has(plot.plotId);
+                    return (
+                      <ContextMenu key={plot.plotId}>
+                        <ContextMenuTrigger asChild>
+                          <button
+                            onClick={() => handlePlotClick(phIdx, plIdx)}
+                            className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${
+                              cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
+                            } ${
+                              isSelected
+                                ? "bg-primary text-primary-foreground border-primary scale-105 z-10 ring-2 ring-primary ring-offset-2"
+                                : plot.isCorner
+                                ? "bg-amber-500/15 text-amber-700 border-amber-500"
+                                : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"
+                            }`}
+                          >
+                            <span className="text-sm font-black text-foreground/80">{plot.plotNumber}</span>
+                            
+                            <div className="flex flex-col items-center justify-center gap-1">
+                              {plot.size ? (
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-500/50 bg-red-50/50 text-red-600 ${isSelected ? "bg-white text-red-700" : ""}`}>
+                                  {plot.size} sqft
+                                </span>
+                              ) : (
+                                <span className="text-[8px] font-medium opacity-40 uppercase tracking-tighter italic">No Size</span>
+                              )}
+                              
+                              {plot.facing ? (
+                                <span className={`text-[9px] font-bold uppercase tracking-wide ${isSelected ? "text-primary-foreground/90" : "text-muted-foreground/80"}`}>
+                                  {plot.facing}
+                                </span>
+                              ) : (
+                                <span className="text-[8px] font-medium opacity-30 uppercase tracking-tighter italic">No Facing</span>
+                              )}
+                            </div>
+                            
+                            {/* Delete Plot Button (Hover) */}
+                            {!cornerSelectMode && !plotEditMode && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removePlot(phIdx, plIdx);
+                                }}
+                                className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </button>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent className="w-48">
+                          <ContextMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground">Plot {plot.plotNumber}</ContextMenuLabel>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem onClick={() => openSingleEdit(phIdx, plIdx, plot)}>
+                            <Settings2 className="mr-2 h-4 w-4" /> Edit Details
+                          </ContextMenuItem>
+                          <ContextMenuItem onClick={() => {
+                            setPhases((prev) => {
+                              const updated = [...prev];
+                              const ph = { ...updated[phIdx] };
+                              const plots = [...ph.plots];
+                              plots[plIdx] = { ...plots[plIdx], isCorner: !plots[plIdx].isCorner };
+                              ph.plots = plots;
+                              updated[phIdx] = ph;
+                              return updated;
+                            });
+                          }}>
+                            <CornerDownRight className="mr-2 h-4 w-4" /> Toggle Corner
+                          </ContextMenuItem>
+                          <ContextMenuSeparator />
+                          <ContextMenuItem className="text-destructive" onClick={() => removePlot(phIdx, plIdx)}>
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Plot
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           ))}
 
-          {/* Navigation */}
           <div className="flex justify-between pt-4">
             <Button variant="ghost" onClick={() => setStep("basic")}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Basic Info
@@ -482,19 +767,15 @@ export function AddInventory() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-          STEP 3: Review & Submit
-          ═══════════════════════════════════════════════════════════════════════ */}
+      {/* STEP 3: Review & Submit */}
       {step === "review" && (
-        <Card className="shadow-lg border-primary/10 overflow-hidden">
+        <Card className="border-primary/10 overflow-hidden">
           <div className="bg-primary/5 p-6 border-b">
             <h2 className="text-2xl font-bold flex items-center gap-2">
               <CheckCircle2 className="h-6 w-6 text-primary" /> Review & Publish
             </h2>
-            <p className="text-muted-foreground">Verify your project structure before saving.</p>
           </div>
           <CardContent className="p-6 space-y-8">
-            {/* Basic Info Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="space-y-1">
                 <Label className="text-muted-foreground text-xs uppercase">Project Name</Label>
@@ -508,54 +789,24 @@ export function AddInventory() {
                 <Label className="text-muted-foreground text-xs uppercase">Total Plots</Label>
                 <p className="font-bold text-lg">{totalPlots}</p>
               </div>
-              <div className="space-y-1">
-                <Label className="text-muted-foreground text-xs uppercase">Corner Plots</Label>
-                <p className="font-bold text-lg text-amber-600">{totalCorner}</p>
-              </div>
             </div>
-
-            {/* Images Summary */}
-            {images.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <Label className="text-muted-foreground text-xs uppercase mb-3 block">Layout Images</Label>
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="h-24 w-36 rounded-lg overflow-hidden flex-shrink-0 border shadow-sm">
-                        <img src={img.preview} alt={`Layout ${idx + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
 
             <Separator />
 
-            {/* Phase Breakdown */}
-            <div>
-              <Label className="text-muted-foreground text-xs uppercase mb-4 block">Phase Summary</Label>
-              <div className="space-y-4">
-                {phases.map((phase, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
-                        {phase.phaseId}
-                      </div>
-                      <div>
-                        <span className="font-bold">{phase.phaseName}</span>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {phase.plots.filter((p) => p.isCorner).length} corner plots highlighted
-                        </p>
-                      </div>
+            <div className="space-y-4">
+              {phases.map((phase, i) => (
+                <div key={i} className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                      {phase.phaseId}
                     </div>
-                    <Badge variant="outline" className="bg-background font-bold">
-                      {phase.plots.length} Plots
-                    </Badge>
+                    <span className="font-bold">{phase.phaseName}</span>
                   </div>
-                ))}
-              </div>
+                  <Badge variant="outline" className="bg-background font-bold">
+                    {phase.plots.length} Plots
+                  </Badge>
+                </div>
+              ))}
             </div>
           </CardContent>
           <CardFooter className="flex justify-between bg-muted/20 p-6 border-t">
@@ -564,7 +815,7 @@ export function AddInventory() {
             </Button>
             <Button onClick={handleSubmit} disabled={loading} size="lg" className="px-8 font-bold">
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              Publish Project
+              {isEditMode ? "Save Changes" : "Publish Project"}
             </Button>
           </CardFooter>
         </Card>
