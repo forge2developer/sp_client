@@ -25,11 +25,19 @@ export function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
 
+        
         {/* Inventory Routes */}
         <Route element={<DashboardLayout />}>
           <Route path="/inventory_listing" element={<InventoryListing />} />
           <Route path="/add_inventory" element={<AddInventory />} />
           <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
+        </Route>
+
+        {/* Lead Management Routes */}
+        <Route element={<DashboardLayout />}>
+          <Route path="/lead-list" element={<LeadList />} />
+          <Route path="/add-lead" element={<AddLead />} />
+          <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
         </Route>
 
         {/* Lead Management Routes */}
