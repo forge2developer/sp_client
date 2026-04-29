@@ -8,6 +8,7 @@ import { AddInventory } from "./pages/Inventory/add-inventory"
 import { LeadList } from "./pages/Leads/LeadList"
 import { AddLead } from "./pages/Leads/AddLead"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
+import { ProjectShowcase } from "./pages/Inventory/project-showcase"
 
 export function App() {
   return (
@@ -23,11 +24,12 @@ export function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
-        
+
         {/* Inventory Routes */}
         <Route element={<DashboardLayout />}>
           <Route path="/inventory_listing" element={<InventoryListing />} />
           <Route path="/add_inventory" element={<AddInventory />} />
+          <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
         </Route>
 
         {/* Lead Management Routes */}
