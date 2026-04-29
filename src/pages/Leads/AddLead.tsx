@@ -18,10 +18,22 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 
+interface LeadFormData {
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    status: string;
+    source: string;
+    value: number;
+    notes: string;
+    assignedTo: string;
+}
+
 export function AddLead() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<LeadFormData>({
         name: "",
         email: "",
         phone: "",
@@ -33,7 +45,7 @@ export function AddLead() {
         assignedTo: "shadcn"
     });
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -41,7 +53,7 @@ export function AddLead() {
         }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {

@@ -16,7 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; // I'll implement a simple Badge if missing or use span
 
-const statusColors = {
+interface Lead {
+    _id: string;
+    name: string;
+    email: string;
+    company?: string;
+    status: string;
+    value?: number;
+    assignedTo: string;
+}
+
+const statusColors: Record<string, string> = {
     "New": "bg-blue-100 text-blue-700 border-blue-200",
     "Contacted": "bg-yellow-100 text-yellow-700 border-yellow-200",
     "Qualified": "bg-green-100 text-green-700 border-green-200",
@@ -27,7 +37,7 @@ const statusColors = {
 };
 
 export function LeadList() {
-    const [leads, setLeads] = useState([]);
+    const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const navigate = useNavigate();

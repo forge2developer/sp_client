@@ -22,7 +22,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
-const statusColors = {
+interface Lead {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    status: string;
+    source: string;
+    value: number;
+    notes: string;
+    assignedTo: string;
+    createdAt: string;
+}
+
+const statusColors: Record<string, string> = {
     "New": "bg-blue-100 text-blue-700 border-blue-200",
     "Contacted": "bg-yellow-100 text-yellow-700 border-yellow-200",
     "Qualified": "bg-green-100 text-green-700 border-green-200",
@@ -35,7 +49,7 @@ const statusColors = {
 export function LeadDashboard() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [lead, setLead] = useState(null);
+    const [lead, setLead] = useState<Lead | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
