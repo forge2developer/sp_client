@@ -43,16 +43,18 @@ export default function DashboardLayout() {
     // 2. Automatic Scan: Check Sidebar "navMain" (Groups with sub-items)
     let found = false
     navigationData.navMain.forEach((group) => {
-      // Check if current page is the top-level hub
-      if (group.url === pathname) {
-        crumbs.push({ label: group.title, isPage: true })
-        found = true
-      }
-      
       const activeSubItem = group.items?.find((sub) => sub.url === pathname)
+
       if (activeSubItem) {
-        crumbs.push({ label: group.title, href: group.url || "#" }) // Parent Category
-        crumbs.push({ label: activeSubItem.title, isPage: true }) // Current Page
+        // If it's a sub-item, show both parent and sub-item (if they are different)
+        if (group.title !== activeSubItem.title) {
+          crumbs.push({ label: group.title, href: group.url || "#" })
+        }
+        crumbs.push({ label: activeSubItem.title, isPage: true })
+        found = true
+      } else if (group.url === pathname) {
+        // If it's just the top-level hub
+        crumbs.push({ label: group.title, isPage: true })
         found = true
       }
     })
