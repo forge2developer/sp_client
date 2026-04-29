@@ -46,7 +46,7 @@ export default function DashboardLayout() {
     navigationData.navMain.forEach((group) => {
       const activeSubItem = group.items?.find((sub) => sub.url === pathname)
       if (activeSubItem) {
-        crumbs.push({ label: group.title, href: "#" }) // Parent Category
+        crumbs.push({ label: group.title, href: group.url || "#" }) // Parent Category
         crumbs.push({ label: activeSubItem.title, isPage: true }) // Current Page
         found = true
       }

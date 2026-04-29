@@ -73,16 +73,20 @@ export const navigationData = {
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/general_settings",
       icon: <Settings2Icon />,
       items: [
         {
-          title: "General",
-          url: "#",
+          title: "General Settings",
+          url: "/general_settings",
         },
         {
-          title: "Team",
-          url: "#",
+          title: "Manage Users",
+          url: "/manage_users",
+        },
+        {
+          title: "Import Data",
+          url: "/import_data",
         },
         {
           title: "Billing",
@@ -95,18 +99,7 @@ export const navigationData = {
       ],
     },
   ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: <LayoutDashboard />, // Placeholder as icons were inline in sidebar
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: <LayoutDashboard />, // Placeholder
-    },
-  ],
+  navSecondary: [],
   projects: [
     {
       name: "Dashboard",
