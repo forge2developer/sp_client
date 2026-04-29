@@ -14,24 +14,23 @@ export function ForgotPasswordForm({
 }: React.ComponentProps<"form">) {
   return (
     <form className={cn("flex flex-col gap-6", className)} {...props}>
-      <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Forgot Password</h1>
-          <p className="text-sm text-balance text-muted-foreground">
-            Enter your email below to reset your password
-          </p>
-        </div>
-        <Field>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h1 className="text-xl font-bold">Forgot Password</h1>
+        <p className="text-balance text-sm text-muted-foreground">
+          Enter your email below to reset your password
+        </p>
+      </div>
+      <div className="grid gap-6">
+        <div className="grid gap-2">
           <FieldLabel htmlFor="reset-email">Email</FieldLabel>
           <Input
             id="reset-email"
             type="email"
             placeholder="m@example.com"
             required
-            className="bg-background"
           />
-        </Field>
-        <Field>
+        </div>
+        <div className="grid gap-2">
           <FieldLabel htmlFor="new_password">New Password</FieldLabel>
           <Input
             id="new_password"
@@ -39,8 +38,8 @@ export function ForgotPasswordForm({
             placeholder="New Password"
             required
           />
-        </Field>
-        <Field>
+        </div>
+        <div className="grid gap-2">
           <FieldLabel htmlFor="confirm_password">Confirm Password</FieldLabel>
           <Input
             id="confirm_password"
@@ -48,12 +47,10 @@ export function ForgotPasswordForm({
             placeholder="Confirm New Password"
             required
           />
-        </Field>
-        <Field>
-          <Button type="submit" className="w-full">
-            Send Reset Link
-          </Button>
-        </Field>
+        </div>
+        <Button type="submit" className="w-full">
+          Send Reset Link
+        </Button>
         <div className="text-center text-sm">
           <Link
             to="/login"
@@ -62,8 +59,9 @@ export function ForgotPasswordForm({
             Back to login
           </Link>
         </div>
-      </FieldGroup>
+      </div>
     </form>
   )
 }
+
 
