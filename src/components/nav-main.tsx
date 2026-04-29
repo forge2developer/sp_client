@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom"
 import {
   Collapsible,
   CollapsibleContent,
@@ -16,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { ChevronRightIcon } from "lucide-react"
 
@@ -33,6 +35,8 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const { setOpenMobile } = useSidebar()
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -56,6 +60,20 @@ export function NavMain({
               </CollapsibleTrigger>
               {item.items?.length ? (
                 <CollapsibleContent>
+<<<<<<< HEAD
+                    <SidebarMenuSub>
+                      {item.items?.map((subItem) => (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild>
+                            <Link to={subItem.url} onClick={() => setOpenMobile(false)}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+=======
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => (
                       <SidebarMenuSubItem key={subItem.title}>
@@ -68,6 +86,7 @@ export function NavMain({
                     ))}
                   </SidebarMenuSub>
                 </CollapsibleContent>
+>>>>>>> 356a3aa9ff63fe373b035166c29d2baf8349d4b8
               ) : null}
             </SidebarMenuItem>
           </Collapsible>
