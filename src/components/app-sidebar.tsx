@@ -6,6 +6,8 @@ import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { Link } from "react-router-dom"
+
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, FrameIcon, PieChartIcon, MapIcon, TerminalIcon, LayoutDashboard, Package } from "lucide-react"
+import { BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, TerminalIcon, LayoutDashboard, Package, Users } from "lucide-react"
 
 const data = {
   user: {
@@ -41,7 +43,23 @@ const data = {
           title: "Add inventory",
           url: "/add_inventory",
         },
-
+      ],
+    },
+    {
+      title: "Lead Management",
+      url: "#",
+      icon: (
+        <Users className="size-4" />
+      ),
+      items: [
+        {
+          title: "Lead list",
+          url: "/lead-list",
+        },
+        {
+          title: "Add lead",
+          url: "/add-lead",
+        },
       ],
     },
     {
@@ -151,12 +169,12 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar className="!border-r-0" {...props}>
+    <Sidebar variant="inset" className="!border-r-0" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <Link to="#">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <TerminalIcon className="size-4" />
                 </div>
@@ -164,7 +182,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <span className="truncate font-medium">Acme Inc</span>
                   <span className="truncate text-xs">Enterprise</span>
                 </div>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -57,7 +57,6 @@ export default function DashboardLayout() {
   }
 
   const breadcrumbs = getBreadcrumbs()
-
   return (
     <SidebarProvider>
       <AppSidebar />
