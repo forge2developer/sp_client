@@ -16,6 +16,8 @@ import { Outlet, useLocation, Link } from "react-router-dom"
 import React from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
 
+import { navigationData } from "@/constants/navigation"
+
 export default function DashboardLayout() {
   const location = useLocation()
   const pathname = location.pathname
@@ -33,26 +35,45 @@ export default function DashboardLayout() {
       { label: "Home", href: "/dashboard" },
     ]
 
+    // 1. Check if it's the dashboard itself
     if (pathname === "/dashboard") {
       crumbs.push({ label: "Dashboard", isPage: true })
-    } else if (pathname === "/inventory_listing") {
-      crumbs.push({ label: "Inventory", href: "#" })
-      crumbs.push({ label: "Inventory Listing", isPage: true })
-    } else if (pathname === "/add_inventory") {
-      crumbs.push({ label: "Inventory", href: "#" })
-      crumbs.push({ label: "Add Inventory", isPage: true })
-    } else {
-      // Dynamic fallback for any other routes
+      return crumbs
+    }
+
+    // 2. Automatic Scan: Check Sidebar "navMain" (Groups with sub-items)
+    let found = false
+    navigationData.navMain.forEach((group) => {
+      const activeSubItem = group.items?.find((sub) => sub.url === pathname)
+      if (activeSubItem) {
+        crumbs.push({ label: group.title, href: "#" }) // Parent Category
+        crumbs.push({ label: activeSubItem.title, isPage: true }) // Current Page
+        found = true
+      }
+    })
+
+    // 3. Automatic Scan: Check Sidebar "projects" (Single items)
+    if (!found) {
+      const projectMatch = navigationData.projects.find((p) => p.url === pathname)
+      if (projectMatch) {
+        crumbs.push({ label: projectMatch.name, isPage: true })
+        found = true
+      }
+    }
+
+    // 4. Dynamic Fallback: If not in sidebar, analyze URL segments
+    if (!found) {
       const segments = pathname.split("/").filter(Boolean)
       segments.forEach((segment, index) => {
         const isLast = index === segments.length - 1
         crumbs.push({
           label: formatLabel(segment),
           isPage: isLast,
-          href: isLast ? undefined : `/${segments.slice(0, index + 1).join("/")}`
+          href: isLast ? undefined : `/${segments.slice(0, index + 1).join("/")}`,
         })
       })
     }
+
     return crumbs
   }
 
