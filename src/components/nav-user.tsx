@@ -1,5 +1,5 @@
 "use client"
-
+import { Link } from "react-router-dom"
 import {
   Avatar,
   AvatarFallback,
@@ -101,7 +101,10 @@ export function NavUser({
             <DropdownMenuItem>
               <LogOutIcon
               />
-              Log out
+              <Link to={"/logout"}>
+                Log out
+              </Link>
+
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

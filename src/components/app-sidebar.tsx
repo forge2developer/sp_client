@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, FrameIcon, PieChartIcon, MapIcon, TerminalIcon } from "lucide-react"
+import { TerminalSquareIcon, BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, FrameIcon, PieChartIcon, MapIcon, TerminalIcon, LayoutDashboard, Package } from "lucide-react"
 
 const data = {
   user: {
@@ -25,26 +25,23 @@ const data = {
   },
   navMain: [
     {
-      title: "Playground",
+      title: "Inventory",
       url: "#",
       icon: (
-        <TerminalSquareIcon
+        <Package
         />
       ),
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "#",
+          title: "Inventory listing",
+          url: "/inventory_listing",
         },
         {
-          title: "Starred",
-          url: "#",
+          title: "Add inventory",
+          url: "/add_inventory",
         },
-        {
-          title: "Settings",
-          url: "#",
-        },
+
       ],
     },
     {
@@ -142,35 +139,19 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
-      url: "#",
+      name: "Dashboard",
+      url: "/dashboard",
       icon: (
-        <FrameIcon
+        <LayoutDashboard
         />
       ),
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: (
-        <PieChartIcon
-        />
-      ),
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: (
-        <MapIcon
-        />
-      ),
-    },
+    }
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar variant="inset" {...props}>
+    <Sidebar className="!border-r-0" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -189,8 +170,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
         <NavProjects projects={data.projects} />
+
+        <NavMain items={data.navMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
