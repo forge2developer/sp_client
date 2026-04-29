@@ -5,8 +5,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 
-
-
 import {
   SidebarGroup,
   SidebarGroupLabel,

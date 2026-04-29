@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/sidebar"
 
 import { Link } from "react-router-dom"
-
 export function NavSecondary({
   items,
   ...props

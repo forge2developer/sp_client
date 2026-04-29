@@ -15,7 +15,7 @@ export const navigationData = {
   navMain: [
     {
       title: "Inventory",
-      url: "#",
+      url: "/inventory_hub",
       icon: <Package />,
       isActive: true,
       items: [
