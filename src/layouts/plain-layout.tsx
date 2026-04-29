@@ -2,6 +2,9 @@ import { Outlet } from "react-router-dom"
 
 export default function AuthLayout() {
   return (
-    <Outlet />
+    <div className="min-h-svh">
+      <Outlet />
+    </div>
   )
 }
+
