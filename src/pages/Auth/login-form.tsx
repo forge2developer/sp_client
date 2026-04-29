@@ -15,7 +15,7 @@ export function LoginForm({
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-xl font-bold">Welcome back</h1>
         <p className="text-balance text-sm text-muted-foreground">
-          SP Promoter
+          SP Promoters
         </p>
       </div>
       <div className="grid gap-6">
