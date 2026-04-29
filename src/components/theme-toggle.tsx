@@ -10,7 +10,7 @@ export function ThemeToggle() {
   useEffect(() => {
     const root = window.document.documentElement
     setIsDark(root.classList.contains("dark"))
-    
+
     // Create an observer to watch for class changes on HTML
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -19,7 +19,7 @@ export function ThemeToggle() {
         }
       })
     })
-    
+
     observer.observe(root, { attributes: true })
     return () => observer.disconnect()
   }, [theme])

@@ -84,9 +84,9 @@ export default function DashboardLayout() {
               ))}
             </BreadcrumbList>
           </Breadcrumb>
-          <div className="ml-auto">
+          {/* <div className="ml-auto">
             <ThemeToggle />
-          </div>
+          </div> */}
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
           <Outlet />

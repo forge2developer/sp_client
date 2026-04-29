@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import AuthLayout from "./layouts/plain-layout"
 import DashboardLayout from "./layouts/sidebar-layout"
-import LoginPage from "./pages/auth-page"
-import DashboardPage from "./pages/dashboard-page"
+import LoginPage from "./pages/Auth/auth-page"
+
+import DashboardPage from "./pages/Dashboard/dashboard-page"
 import { InventoryListing } from "./pages/Inventory/inventory-listing"
 import { AddInventory } from "./pages/Inventory/add-inventory"
 
@@ -13,7 +14,7 @@ export function App() {
         {/* Auth Routes (Outside Sidebar) */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/logout" element={<LoginPage />} />
+          <Route path="/forgot_password" element={<LoginPage />} />
         </Route>
 
         {/* Dashboard Routes (Inside Sidebar) */}
