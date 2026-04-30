@@ -29,6 +29,7 @@ export function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
 
+        
         {/* Inventory Routes */}
         <Route element={<DashboardLayout />}>
           <Route path="/inventory_hub" element={<InventoryHub />} />
@@ -48,6 +49,13 @@ export function App() {
           <Route path="/general_settings" element={<GeneralSettings />} />
           <Route path="/manage_users" element={<ManageUsers />} />
           <Route path="/import_data" element={<ImportData />} />
+        </Route>
+
+        {/* Lead Management Routes */}
+        <Route element={<DashboardLayout />}>
+          <Route path="/lead-list" element={<LeadList />} />
+          <Route path="/add-lead" element={<AddLead />} />
+          <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
         </Route>
 
         {/* Redirects */}
