@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, TerminalIcon, LayoutDashboard, Package, Users } from "lucide-react"
+import { TerminalIcon } from "lucide-react"
 
 import { navigationData as data } from "@/constants/navigation"
 
