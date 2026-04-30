@@ -15,7 +15,7 @@ export const navigationData = {
   navMain: [
     {
       title: "Inventory",
-      url: "#",
+      url: "/inventory_hub",
       icon: <Package />,
       isActive: true,
       items: [
@@ -73,7 +73,7 @@ export const navigationData = {
     // },
     {
       title: "Settings",
-      url: "#",
+      url: "/general_settings",
       icon: <Settings2Icon />,
       // items: [
       //   {

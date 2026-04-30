@@ -31,22 +31,27 @@ export default function DashboardLayout() {
 
   // Define breadcrumb structure based on route
   const getBreadcrumbs = () => {
+    // 1. Check if it's the dashboard itself
+    if (pathname === "/dashboard") {
+      return [{ label: "Dashboard", isPage: true }]
+    }
+
     const crumbs: { label: string; href?: string; isPage?: boolean }[] = [
       { label: "Home", href: "/dashboard" },
     ]
 
-    // 1. Check if it's the dashboard itself
-    if (pathname === "/dashboard") {
-      crumbs.push({ label: "Dashboard", isPage: true })
-      return crumbs
-    }
-
     // 2. Automatic Scan: Check Sidebar "navMain" (Groups with sub-items)
     let found = false
     navigationData.navMain.forEach((group) => {
+      // Check if current page is the top-level hub
+      if (group.url === pathname) {
+        crumbs.push({ label: group.title, isPage: true })
+        found = true
+      }
+      
       const activeSubItem = group.items?.find((sub) => sub.url === pathname)
       if (activeSubItem) {
-        crumbs.push({ label: group.title, href: "#" }) // Parent Category
+        crumbs.push({ label: group.title, href: group.url || "#" }) // Parent Category
         crumbs.push({ label: activeSubItem.title, isPage: true }) // Current Page
         found = true
       }
@@ -61,7 +66,15 @@ export default function DashboardLayout() {
       }
     }
 
-    // 4. Dynamic Fallback: If not in sidebar, analyze URL segments
+    // 4. Special Case: Project Showcase (sub-page of Inventory Listing)
+    if (!found && pathname.startsWith("/project_showcase/")) {
+      crumbs.push({ label: "Inventory", href: "/inventory_hub" })
+      crumbs.push({ label: "Inventory listing", href: "/inventory_listing" })
+      crumbs.push({ label: "Project Showcase", isPage: true })
+      found = true
+    }
+
+    // 5. Dynamic Fallback: If not in sidebar, analyze URL segments
     if (!found) {
       const segments = pathname.split("/").filter(Boolean)
       segments.forEach((segment, index) => {
@@ -78,6 +91,7 @@ export default function DashboardLayout() {
   }
 
   const breadcrumbs = getBreadcrumbs()
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -115,4 +129,3 @@ export default function DashboardLayout() {
     </SidebarProvider>
   )
 }
-

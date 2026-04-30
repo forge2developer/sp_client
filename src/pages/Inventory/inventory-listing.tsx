@@ -10,12 +10,32 @@ import {
   Loader2,
   Package,
   CornerDownRight,
+  MoreHorizontal,
+  Eye,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+  ContextMenuSeparator,
+  ContextMenuLabel,
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import api, { type Project } from "@/lib/api";
 
 export function InventoryListing() {
@@ -43,6 +63,18 @@ export function InventoryListing() {
     }
   };
 
+  const handleDelete = async (productId: number) => {
+    if (window.confirm("Are you sure you want to delete this project?")) {
+      try {
+        await api.delete(`/projects/${productId}?organization=${organization}`);
+        fetchProjects(); // Refresh list
+      } catch (error: any) {
+        console.error("Error deleting project:", error);
+        alert(error?.response?.data?.message || "Failed to delete project");
+      }
+    }
+  };
+
   const filteredProjects = projects.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -50,7 +82,7 @@ export function InventoryListing() {
   );
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
         <div>
@@ -100,60 +132,80 @@ export function InventoryListing() {
       ) : viewMode === "grid" ? (
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
-            <Card
-              key={project.product_id}
-              className="overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
-              onClick={() => navigate(`/project_showcase/${project.product_id}`)}
-            >
-              {/* Banner */}
-              <div className="h-40 bg-muted relative flex items-center justify-center overflow-hidden">
-                {project.layoutImages?.[0] ? (
-                  <img
-                    src={project.layoutImages[0]}
-                    alt={project.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <MapPin className="h-12 w-12 text-muted-foreground/30" />
-                )}
-                <Badge className="absolute top-3 right-3 capitalize">Plots</Badge>
-              </div>
-              <CardHeader className="pb-2">
-                <CardTitle className="group-hover:text-primary transition-colors">{project.name}</CardTitle>
-                <CardDescription className="flex items-center mt-1">
-                  <MapPin className="h-3 w-3 mr-1" /> {project.location || "Location not set"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-3 pt-2">
-                  <div className="bg-muted/50 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Phases</p>
-                    <p className="text-lg font-bold">{project.phaseCount || 0}</p>
-                  </div>
-                  <div className="bg-muted/50 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total Plots</p>
-                    <p className="text-lg font-bold">{project.totalPlots || 0}</p>
-                  </div>
-                  <div className="bg-primary/5 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-primary/70 uppercase font-semibold">Booked</p>
-                    <p className="text-lg font-bold text-primary">{project.bookedCount || 0}</p>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <span>ID: {project.product_id}</span>
-                    {(project.cornerPlots ?? 0) > 0 && (
-                      <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200">
-                        <CornerDownRight className="h-2.5 w-2.5 mr-0.5" /> {project.cornerPlots} corner
-                      </Badge>
+            <ContextMenu key={project.product_id}>
+              <ContextMenuTrigger asChild>
+                <Card
+                  className="overflow-hidden pt-0 transition-all cursor-pointer group relative border-none ring-1 ring-border"
+                  onClick={() => navigate(`/project_showcase/${project.product_id}`)}
+                >
+                  {/* Banner */}
+                  <div className="h-40 bg-muted relative flex items-center justify-center overflow-hidden">
+                    {project.layoutImages?.[0] ? (
+                      <img
+                        src={project.layoutImages[0]}
+                        alt={project.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <MapPin className="h-12 w-12 text-muted-foreground/30" />
                     )}
+                    <Badge className="absolute top-3 right-3 capitalize">Plots</Badge>
                   </div>
-                  <span className="flex items-center text-primary font-medium">
-                    View <ChevronRight className="h-4 w-4 ml-0.5" />
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="group-hover:text-primary transition-colors">{project.name}</CardTitle>
+                    <CardDescription className="flex items-center mt-1">
+                      <MapPin className="h-3 w-3 mr-1" /> {project.location || "Location not set"}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-3 pt-2">
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Phases</p>
+                        <p className="text-lg font-bold">{project.phaseCount || 0}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-muted-foreground uppercase font-semibold">Total Plots</p>
+                        <p className="text-lg font-bold">{project.totalPlots || 0}</p>
+                      </div>
+                      <div className="bg-primary/5 rounded-lg p-2 text-center">
+                        <p className="text-[10px] text-primary/70 uppercase font-semibold">Booked</p>
+                        <p className="text-lg font-bold text-primary">{project.bookedCount || 0}</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span>ID: {project.product_id}</span>
+                        {(project.cornerPlots ?? 0) > 0 && (
+                          <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200">
+                            <CornerDownRight className="h-2.5 w-2.5 mr-0.5" /> {project.cornerPlots} corner
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="flex items-center text-primary font-medium">
+                        View <ChevronRight className="h-4 w-4 ml-0.5" />
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </ContextMenuTrigger>
+              <ContextMenuContent className="w-64">
+                <ContextMenuLabel className="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-widest">Project Actions</ContextMenuLabel>
+                <ContextMenuSeparator />
+                <ContextMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/project_showcase/${project.product_id}`); }}>
+                  <Eye className="mr-2 h-4 w-4" /> View Showcase
+                </ContextMenuItem>
+                <ContextMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/add_inventory?edit=${project.product_id}`); }}>
+                  <Edit className="mr-2 h-4 w-4" /> Edit Project
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(project.product_id); }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Project
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           ))}
         </div>
       ) : (
@@ -175,11 +227,11 @@ export function InventoryListing() {
               {filteredProjects.map((project) => (
                 <tr
                   key={project.product_id}
-                  className="border-b hover:bg-muted/50 transition-colors cursor-pointer"
+                  className="border-b hover:bg-muted/50 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/project_showcase/${project.product_id}`)}
                 >
                   <td className="p-4 font-medium">{project.product_id}</td>
-                  <td className="p-4 font-bold">{project.name}</td>
+                  <td className="p-4 font-bold group-hover:text-primary transition-colors">{project.name}</td>
                   <td className="p-4">{project.location}</td>
                   <td className="p-4 text-center">{project.phaseCount}</td>
                   <td className="p-4 text-center">{project.totalPlots}</td>
@@ -194,16 +246,29 @@ export function InventoryListing() {
                     </Badge>
                   </td>
                   <td className="p-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/project_showcase/${project.product_id}`);
-                      }}
-                    >
-                      View
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/project_showcase/${project.product_id}`); }}>
+                          <Eye className="mr-2 h-4 w-4" /> View
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/add_inventory?edit=${project.product_id}`); }}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-destructive focus:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(project.product_id); }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
