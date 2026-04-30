@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, TerminalIcon, LayoutDashboard, Package, Users } from "lucide-react"
-import { TerminalIcon } from "lucide-react"
+
 
 import { navigationData as data } from "@/constants/navigation"
 
@@ -31,8 +31,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <div className="absolute inset-0 bg-gradient-to-b from-red-700/10 via-transparent to-white/10 pointer-events-none" />
 
       <SidebarHeader className="relative z-10 border-b border-red-500/10">
-    <Sidebar variant="inset" className="!border-r-0" {...props}>
-      <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 group-data-[state=collapsed]:p-0">

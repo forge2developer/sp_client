@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import AuthLayout from "./layouts/plain-layout"
 import DashboardLayout from "./layouts/sidebar-layout"
-import LoginPage from "./pages/auth-page"
+import { LoginForm } from "./pages/Auth/auth-page"
+import { FogotPasswordPage } from "./pages/Auth/forgot-password-form"
 import DashboardPage from "./pages/Dashboard/dashboard-page"
 import { InventoryHub } from "./pages/Inventory/inventory-hub"
 import { InventoryListing } from "./pages/Inventory/inventory-listing"
@@ -14,14 +15,16 @@ import { AddLead } from "./pages/Leads/AddLead"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
 import { ProjectShowcase } from "./pages/Inventory/project-showcase"
 
+
 export function App() {
   return (
     <BrowserRouter>
       <Routes>
         {/* Auth Routes (Outside Sidebar) */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/logout" element={<LoginPage />} />
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/forgot-password" element={<FogotPasswordPage />} />
+
         </Route>
 
         {/* Dashboard Routes (Inside Sidebar) */}
@@ -29,7 +32,7 @@ export function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
         </Route>
 
-        
+
         {/* Inventory Routes */}
         <Route element={<DashboardLayout />}>
           <Route path="/inventory_hub" element={<InventoryHub />} />
