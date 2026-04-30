@@ -1,9 +1,9 @@
 import {
-  BotIcon,
-  BookOpenIcon,
   Settings2Icon,
   LayoutDashboard,
-  Package
+  Package,
+  Wrench,
+  Target
 } from "lucide-react"
 
 export const navigationData = {
@@ -13,6 +13,21 @@ export const navigationData = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
+    {
+      title: "Lead Directory",
+      url: "#",
+      icon: <Target />,
+      items: [
+        {
+          title: "All Leads",
+          url: "/lead-list",
+        },
+        {
+          title: "Add New Lead",
+          url: "/add-lead",
+        },
+      ],
+    },
     {
       title: "Inventory",
       url: "/inventory_hub",
@@ -29,25 +44,21 @@ export const navigationData = {
         },
       ],
     },
-    // {
-    //   title: "Models",
-    //   url: "#",
-    //   icon: <BotIcon />,
-    //   items: [
-    //     {
-    //       title: "Genesis",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Explorer",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Quantum",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
+    {
+      title: "Tools",
+      url: "#",
+      icon: <Wrench />,
+      items: [
+        {
+          title: "Automation",
+          url: "/automation",
+        },
+        {
+          title: "Third party Integrations",
+          url: "/third_party_integrations",
+        },
+       ],
+    },
     // {
     //   title: "Documentation",
     //   url: "#",
@@ -75,24 +86,17 @@ export const navigationData = {
       title: "Settings",
       url: "/general_settings",
       icon: <Settings2Icon />,
-      // items: [
-      //   {
-      //     title: "General",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Team",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Billing",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Limits",
-      //     url: "#",
-      //   },
-      // ],
+      noDropdown: true,
+      items: [
+        {
+          title: "Manage Users",
+          url: "/manage_users",
+        },
+        {
+          title: "Import Data",
+          url: "/import_data",
+        },
+      ],
     },
   ],
   navSecondary: [

@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-    ChevronLeft, 
-    Save, 
-    X, 
-    User, 
-    Mail, 
-    Phone, 
-    Building2, 
+import {
+    ChevronLeft,
+    Save,
+    X,
+    User,
+    Mail,
+    Phone,
+    Building2,
     Briefcase,
     DollarSign,
     FileText,
@@ -95,11 +95,11 @@ export function AddLead() {
                                 <Label htmlFor="name">Full Name</Label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="name" 
-                                        name="name" 
-                                        placeholder="e.g. John Doe" 
-                                        className="pl-9" 
+                                    <Input
+                                        id="name"
+                                        name="name"
+                                        placeholder="e.g. John Doe"
+                                        className="pl-9"
                                         required
                                         value={formData.name}
                                         onChange={handleChange}
@@ -110,12 +110,12 @@ export function AddLead() {
                                 <Label htmlFor="email">Email Address</Label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="email" 
-                                        name="email" 
-                                        type="email" 
-                                        placeholder="john@example.com" 
-                                        className="pl-9" 
+                                    <Input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        placeholder="john@example.com"
+                                        className="pl-9"
                                         required
                                         value={formData.email}
                                         onChange={handleChange}
@@ -126,10 +126,10 @@ export function AddLead() {
                                 <Label htmlFor="phone">Phone Number</Label>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="phone" 
-                                        name="phone" 
-                                        placeholder="+1 (555) 000-0000" 
+                                    <Input
+                                        id="phone"
+                                        name="phone"
+                                        placeholder="+1 (555) 000-0000"
                                         className="pl-9"
                                         value={formData.phone}
                                         onChange={handleChange}
@@ -152,10 +152,10 @@ export function AddLead() {
                                 <Label htmlFor="company">Company Name</Label>
                                 <div className="relative">
                                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="company" 
-                                        name="company" 
-                                        placeholder="Acme Corp" 
+                                    <Input
+                                        id="company"
+                                        name="company"
+                                        placeholder="Acme Corp"
                                         className="pl-9"
                                         value={formData.company}
                                         onChange={handleChange}
@@ -166,11 +166,11 @@ export function AddLead() {
                                 <Label htmlFor="value">Lead Value ($)</Label>
                                 <div className="relative">
                                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                    <Input 
-                                        id="value" 
-                                        name="value" 
-                                        type="number" 
-                                        placeholder="0.00" 
+                                    <Input
+                                        id="value"
+                                        name="value"
+                                        type="number"
+                                        placeholder="0.00"
                                         className="pl-9"
                                         value={formData.value}
                                         onChange={handleChange}
@@ -180,8 +180,8 @@ export function AddLead() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <select 
-                                        id="status" 
+                                    <select
+                                        id="status"
                                         name="status"
                                         className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         value={formData.status}
@@ -196,8 +196,8 @@ export function AddLead() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="source">Source</Label>
-                                    <select 
-                                        id="source" 
+                                    <select
+                                        id="source"
                                         name="source"
                                         className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         value={formData.source}
@@ -224,10 +224,10 @@ export function AddLead() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="notes">Notes</Label>
-                                <textarea 
-                                    id="notes" 
+                                <textarea
+                                    id="notes"
                                     name="notes"
-                                    placeholder="Add any additional context or requirements here..." 
+                                    placeholder="Add any additional context or requirements here..."
                                     className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                     value={formData.notes}
                                     onChange={handleChange}
