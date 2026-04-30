@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { 
-    Plus, 
-    Search, 
-    Filter, 
-    MoreHorizontal, 
-    Phone, 
-    Mail, 
-    Building2, 
+import {
+    Plus,
+    Search,
+    Filter,
+    MoreHorizontal,
+    Phone,
+    Mail,
+    Building2,
     ArrowUpRight,
     User
 } from "lucide-react";
@@ -57,7 +57,7 @@ export function LeadList() {
         }
     };
 
-    const filteredLeads = leads.filter(lead => 
+    const filteredLeads = leads.filter(lead =>
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase())
@@ -70,8 +70,8 @@ export function LeadList() {
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">Lead Management</h1>
                     <p className="text-muted-foreground mt-1">Manage and track your potential customers.</p>
                 </div>
-                <Button onClick={() => navigate("/add-lead")} className="gap-2">
-                    <Plus className="h-4 w-4" /> Add New Lead
+                <Button onClick={() => navigate("/add-lead")} className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 font-bold shadow-lg shadow-red-600/20">
+                    <Plus className="h-4 w-4 mr-2" /> Add New Lead
                 </Button>
             </div>
 
@@ -80,8 +80,8 @@ export function LeadList() {
                     <div className="flex items-center gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input 
-                                placeholder="Search leads by name, company, or email..." 
+                            <Input
+                                placeholder="Search leads by name, company, or email..."
                                 className="pl-9 bg-background/50 border-muted"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -93,9 +93,9 @@ export function LeadList() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="rounded-lg border border-muted overflow-hidden">
+                    <div className="rounded-xl border border-muted overflow-hidden bg-white">
                         <table className="w-full text-sm">
-                            <thead className="bg-muted/50 text-muted-foreground border-b border-muted">
+                            <thead className="bg-gray-900/[0.03] text-muted-foreground border-b border-muted">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-medium">Lead Info</th>
                                     <th className="px-4 py-3 text-left font-medium">Company</th>
@@ -120,8 +120,8 @@ export function LeadList() {
                                     </tr>
                                 ) : (
                                     filteredLeads.map((lead) => (
-                                        <tr 
-                                            key={lead._id} 
+                                        <tr
+                                            key={lead._id}
                                             className="hover:bg-muted/30 transition-colors cursor-pointer group"
                                             onClick={() => navigate(`/lead-dashboard/${lead._id}`)}
                                         >

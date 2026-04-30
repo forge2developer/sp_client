@@ -13,6 +13,12 @@ import { LeadList } from "./pages/Leads/LeadList"
 import { AddLead } from "./pages/Leads/AddLead"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
 import { ProjectShowcase } from "./pages/Inventory/project-showcase"
+import Automation from "./pages/Tools/Automations/automation"
+import Campaigns from "./pages/Tools/Automations/campaigns"
+import CampaignBuilder from "./pages/Tools/Automations/campaignbuilder"
+import LeadCapture from "./pages/Tools/Automations/leadcapture"
+import LeadCaptureForm from "./pages/Tools/Automations/leadcaptureform"
+import ThirdParty from "./pages/Tools/Third Party/thirdparty"
 
 export function App() {
   return (
@@ -36,6 +42,16 @@ export function App() {
           <Route path="/inventory_listing" element={<InventoryListing />} />
           <Route path="/add_inventory" element={<AddInventory />} />
           <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
+        </Route>
+        {/*Tools Routes*/}
+        <Route element={<DashboardLayout />}>
+          <Route path="/automation" element={<Automation />} />
+          <Route path="/automation/campaigns" element={<Campaigns />} />
+          <Route path="/automation/campaigns/builder" element={<CampaignBuilder />} />
+          <Route path="/automation/campaigns/builder/:id" element={<CampaignBuilder />} />
+          <Route path="/automation/leadcapture" element={<LeadCapture />} />
+          <Route path="/automation/leadcapture/form" element={<LeadCaptureForm />} />
+          <Route path="/third_party_integrations" element={<ThirdParty />} />
         </Route>
 
         {/* Lead Management Routes */}
