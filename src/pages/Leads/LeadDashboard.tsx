@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import api from "@/lib/api";
 
 interface Lead {
     _id: string;
@@ -55,16 +56,15 @@ export function LeadDashboard() {
     useEffect(() => {
         const fetchLead = async () => {
             try {
-                const response = await fetch(`http://localhost:5000/api/leads/${id}`);
-                const data = await response.json();
-                setLead(data);
+                const response = await api.get(`/leads/${id}`);
+                setLead(response.data);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching lead:", error);
                 setLoading(false);
             }
         };
-        fetchLead();
+        if (id) fetchLead();
     }, [id]);
 
     if (loading) return <div className="p-6 text-center">Loading Lead Details...</div>;
@@ -176,10 +176,10 @@ export function LeadDashboard() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assigned Agent</p>
-                                    <p className="text-foreground font-medium flex items-center gap-2 mt-1">
+                                    <div className="text-foreground font-medium flex items-center gap-2 mt-1">
                                         <div className="h-6 w-6 rounded-full bg-primary text-[10px] text-white flex items-center justify-center font-bold">JD</div>
                                         {lead.assignedTo}
-                                    </p>
+                                    </div>
                                 </div>
                             </div>
                             <Separator />

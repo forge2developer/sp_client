@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge"; // I'll implement a simple Badge if missing or use span
+import api from "@/lib/api";
 
 interface Lead {
     _id: string;
@@ -48,9 +48,8 @@ export function LeadList() {
 
     const fetchLeads = async () => {
         try {
-            const response = await fetch("http://localhost:5000/api/leads");
-            const data = await response.json();
-            setLeads(data);
+            const response = await api.get("/leads");
+            setLeads(response.data);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching leads:", error);
