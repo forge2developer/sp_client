@@ -62,7 +62,7 @@ interface LeadCaptureConfig {
   id: string
   name: string
   source: string
-  project_id?: { _id: string; name: string }
+  project_ids: string[]
   assigned_people: { id: string; name: string; category: string }[]
   status: string
   selected_fields: string[]
@@ -76,7 +76,8 @@ const organization = "SP_PROMOTERS"
 const getColumns = (
   onEdit: (config: LeadCaptureConfig) => void,
   onDelete: (config: LeadCaptureConfig) => void,
-  onStatusToggle: (config: LeadCaptureConfig) => void
+  onStatusToggle: (config: LeadCaptureConfig) => void,
+  allProjects: any[]
 ): ColumnDef<LeadCaptureConfig>[] => [
   {
     accessorKey: "name",
@@ -99,19 +100,26 @@ const getColumns = (
     ),
   },
   {
-    accessorKey: "project_id.name",
+    accessorKey: "project_ids",
     header: "Target Project",
     meta: { label: "Target Project" },
-    cell: ({ row }) => (
-      <div className="inline-flex items-center gap-2 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50 px-3 py-1.5 rounded-xl">
-        <div className="h-6 w-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-          <Target className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+    cell: ({ row }) => {
+      const pIds = row.original.project_ids || []
+      const projectNames = pIds
+        .map(id => allProjects.find(p => (p.id || p._id) === id)?.name)
+        .filter(Boolean)
+
+      return (
+        <div className="inline-flex items-center gap-2 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800/50 px-3 py-1.5 rounded-xl">
+          <div className="h-6 w-6 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <Target className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+          </div>
+          <span className="font-bold text-slate-700 dark:text-slate-200 text-xs">
+            {projectNames.length > 0 ? projectNames.join(", ") : "All Projects"}
+          </span>
         </div>
-        <span className="font-bold text-slate-700 dark:text-slate-200 text-xs">
-          {row.original.project_id?.name || "All Projects"}
-        </span>
-      </div>
-    ),
+      )
+    },
   },
   {
     accessorKey: "assigned_people",
@@ -224,6 +232,7 @@ const getColumns = (
 export default function LeadCapture() {
   const navigate = useNavigate()
   const [forms, setForms] = useState<LeadCaptureConfig[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<LeadCaptureConfig | null>(
     null
@@ -236,24 +245,27 @@ export default function LeadCapture() {
   const [globalFilter, setGlobalFilter] = useState("")
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
-  // ── Fetch lead capture configs ──
-  const fetchForms = async () => {
+  // ── Fetch lead capture configs & projects ──
+  const fetchData = async () => {
     setLoading(true)
     try {
-      const res = await grpcApi.get(
-        `/lead-capture-configs?organization=${organization}`
-      )
-      setForms(res.data.data || [])
+      const [configsRes, projectsRes] = await Promise.all([
+        grpcApi.get(`/lead-capture-configs?organization=${organization}`),
+        grpcApi.get(`/projects?organization=${organization}`)
+      ])
+      setForms(configsRes.data.data || [])
+      setProjects(projectsRes.data.data || [])
     } catch (error) {
-      console.error("Failed to fetch forms:", error)
+      console.error("Failed to fetch data:", error)
       setForms([])
+      setProjects([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchForms()
+    fetchData()
   }, [])
 
   // ── Delete handler ──
@@ -262,7 +274,7 @@ export default function LeadCapture() {
     setIsDeleting(true)
     try {
       await api.delete(`/lead-capture-configs/${deleteTarget.id}`)
-      fetchForms()
+      fetchData()
     } catch (error) {
       alert("Failed to delete configuration")
     } finally {
@@ -286,14 +298,14 @@ export default function LeadCapture() {
     const newStatus = config.status === "Active" ? "Inactive" : "Active"
     try {
       await api.put(`/lead-capture-configs/${config.id}`, { status: newStatus })
-      fetchForms()
+      fetchData()
     } catch (error) {
       alert("Failed to update status")
     }
   }
 
   // ── Table Columns ──
-  const columns = useMemo(() => getColumns(handleEdit, setDeleteTarget, handleStatusToggle), [handleEdit, handleStatusToggle])
+  const columns = useMemo(() => getColumns(handleEdit, setDeleteTarget, handleStatusToggle, projects), [handleEdit, handleStatusToggle, projects])
 
   function cn(...classes: any[]) {
     return classes.filter(Boolean).join(" ")
@@ -430,7 +442,7 @@ export default function LeadCapture() {
           </DropdownMenu>
 
           {/* Refresh Button */}
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={fetchForms}>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={fetchData}>
             <RefreshCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
 

@@ -82,7 +82,7 @@ const getColumns = (
         </div>
         <div>
           <div className="font-bold text-sm leading-tight">{row.original.campaignName}</div>
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+          <div className="text-[10px] font-bold text-slate-400  tracking-widest mt-1">
             {row.original.sourceCount} Sources Active
           </div>
         </div>
@@ -118,7 +118,7 @@ const getColumns = (
     header: "Status",
     cell: ({ row }) => (
       <Badge className={cn(
-        "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border-none",
+        "px-3 py-1 rounded-lg text-[10px] font-black  tracking-widest border-none",
         row.original.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-zinc-100 text-zinc-400"
       )}>
         {row.original.status}

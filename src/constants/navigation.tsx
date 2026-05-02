@@ -15,7 +15,7 @@ export const navigationData = {
   navMain: [
     {
       title: "Lead Directory",
-      url: "#",
+      url: "/lead_hub",
       icon: <Target />,
       items: [
         {
@@ -23,7 +23,7 @@ export const navigationData = {
           url: "/lead-list",
         },
         {
-          title: "Add New Lead",
+          title: "Lead Form",
           url: "/add-lead",
         },
       ],
@@ -46,7 +46,7 @@ export const navigationData = {
     },
     {
       title: "Tools",
-      url: "#",
+      url: "/tools_hub",
       icon: <Wrench />,
       items: [
         {

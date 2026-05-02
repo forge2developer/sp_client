@@ -111,6 +111,8 @@ export default function LeadCaptureForm() {
 
   // Options
   const [projects, setProjects] = useState<Project[]>([])
+  const [users, setUsers] = useState<any[]>([])
+  const [selectResetKey, setSelectResetKey] = useState(0)
 
   // Form State
   const [formData, setFormData] = useState({
@@ -118,7 +120,7 @@ export default function LeadCaptureForm() {
     source: "",
     campaignName: "",
     subSource: "",
-    projectId: "",
+    projectIds: [] as string[],
     status: "Active",
     selectedContactFields: ["email", "location"] as string[],
     manualContactFields: [] as { key: string }[],
@@ -132,8 +134,12 @@ export default function LeadCaptureForm() {
     const init = async () => {
       setFetching(true)
       try {
-        const projRes = await grpcApi.get(`/projects?organization=${organization}`)
+        const [projRes, userRes] = await Promise.all([
+          grpcApi.get(`/projects?organization=${organization}`),
+          grpcApi.get(`/users?organization=${organization}`),
+        ])
         setProjects(projRes.data.data || [])
+        setUsers(userRes.data.data || [])
 
         if (formId) {
           const res = await grpcApi.get(`/lead-capture-configs/${formId}`)
@@ -141,15 +147,15 @@ export default function LeadCaptureForm() {
           setFormData({
             name: config.name,
             source: config.source || "",
-            campaignName: config.campaignName || "",
-            subSource: config.subSource || "",
-            projectId: config.projectId || "",
+            campaignName: config.campaign_name || config.campaignName || "",
+            subSource: config.sub_source || config.subSource || "",
+            projectIds: Array.isArray(config.project_ids) ? config.project_ids : [],
             status: config.status,
-            selectedContactFields: config.selected_contact_fields || [],
-            manualContactFields: config.manual_contact_fields || [],
-            selectedRequirementFields: config.selected_fields || [],
-            manualRequirementFields: config.manual_requirements || [],
-            assignedPeople: config.assigned_people || [],
+            selectedContactFields: Array.isArray(config.selected_contact_fields) ? config.selected_contact_fields : [],
+            manualContactFields: Array.isArray(config.manual_contact_fields) ? config.manual_contact_fields : [],
+            selectedRequirementFields: Array.isArray(config.selected_fields) ? config.selected_fields : [],
+            manualRequirementFields: Array.isArray(config.manual_requirements) ? config.manual_requirements : [],
+            assignedPeople: Array.isArray(config.assigned_people) ? config.assigned_people : [],
           })
         }
       } catch (error) {
@@ -195,16 +201,16 @@ export default function LeadCaptureForm() {
     try {
       const payload = {
         organization,
-        name: formData.name || `${formData.source} Lead Form`,
-        source: formData.source,
+        name: formData.name || `${formData.source || "Manual"} Lead Form`,
+        source: formData.source || "Manual",
         campaign_name: formData.campaignName,
         sub_source: formData.subSource,
-        project_id: formData.projectId || null,
+        project_ids: formData.projectIds.filter(id => !!id),
         status: formData.status,
         selected_contact_fields: formData.selectedContactFields,
-        manual_contact_fields: formData.manualContactFields,
+        manual_contact_fields: formData.manualContactFields.map(f => ({ key: f.key })),
         selected_fields: formData.selectedRequirementFields,
-        manual_requirements: formData.manualRequirementFields,
+        manual_requirements: formData.manualRequirementFields.map(f => ({ key: f.key, value: "" })),
         assigned_people: formData.assignedPeople,
       }
 
@@ -232,24 +238,24 @@ export default function LeadCaptureForm() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full py-8 px-4 space-y-12">
+    <div className="max-w-5xl mx-auto w-full py-8 px-4 space-y-12">
       {/* ── Stepper ── */}
-      <div className="flex items-center justify-center py-8 gap-0 max-w-5xl mx-auto">
+      <div className="flex items-center justify-center py-8 gap-0 max-w-4xl mx-auto">
         {STEPS.map((step, idx) => {
           const isActive = currentStep === step.id
           const isCompleted = currentStep > step.id
-          
+
           return (
             <div key={step.id} className="flex items-center">
               <div className="flex flex-col items-center gap-4 relative">
                 <div
                   className={cn(
-                    "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 border-4 shadow-sm cursor-pointer",
+                    "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-500 border-4  cursor-pointer",
                     isCompleted
                       ? "bg-emerald-500 border-emerald-500 text-white"
                       : isActive
-                      ? "bg-red-600 border-red-600 text-white scale-110 shadow-lg shadow-red-600/30 ring-4 ring-red-50 dark:ring-red-950/20"
-                      : "bg-white dark:bg-zinc-950 border-muted text-muted-foreground"
+                        ? "bg-red-600 border-red-600 text-white scale-110 ring-4 ring-red-50 dark:ring-red-950/20"
+                        : "bg-white dark:bg-zinc-950 border-muted text-muted-foreground"
                   )}
                   onClick={() => isCompleted && setCurrentStep(step.id)}
                 >
@@ -264,14 +270,14 @@ export default function LeadCaptureForm() {
                   </p>
                 </div>
               </div>
-              
+
               {idx < STEPS.length - 1 && (
-                <div className="w-32 h-1 bg-muted mx-4 rounded-full overflow-hidden">
-                  <div 
+                <div className="w-68 h-2 bg-muted mx-0 rounded-full overflow-hidden">
+                  <div
                     className={cn(
                       "h-full bg-red-600 transition-all duration-500",
                       isCompleted ? "w-full" : "w-0"
-                    )} 
+                    )}
                   />
                 </div>
               )}
@@ -282,17 +288,35 @@ export default function LeadCaptureForm() {
 
       <main className="">
         {currentStep === 1 && (
-          <div className="space-y-0 max-w-5xl mx-auto overflow-hidden border rounded-xl shadow-sm bg-card">
+          <div className="space-y-0 max-w-4xl mx-auto overflow-hidden border rounded-md bg-card">
+            {/* --- Form Identity Section --- */}
+            <section className="p-10 space-y-8 bg-zinc-50/50 dark:bg-zinc-900/10">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 " />
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Form Identity</h3>
+              </div>
+              <div className="space-y-3 max-w-md">
+                <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Configuration Name <span className="text-red-600">*</span></Label>
+                <Input
+                  placeholder="e.g. Website Inquiry Form"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="h-10 w-full bg-background border-muted rounded-md px-4 font-bold"
+                />
+              </div>
+            </section>
+
+            <Separator />
             {/* ── Contact Section ── */}
             <section className="p-10 space-y-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500 " />
                   <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Contact Information</h3>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 font-black text-[9px] tracking-widest h-9 shadow-lg shadow-red-600/10"
+                  className="bg-red-600 hover:bg-red-700 text-white rounded-md px-6 font-black text-[9px] tracking-widest h-9  "
                   onClick={() => setIsContactSheetOpen(true)}
                 >
                   + ADD FIELDS
@@ -302,11 +326,11 @@ export default function LeadCaptureForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Full Name <span className="text-red-500">*</span></Label>
-                  <Input disabled placeholder="Enter full name" className="h-14 bg-muted/20 border-muted rounded-xl" />
+                  <Input disabled placeholder="Enter full name" className="h-10 w-full bg-muted/20 rounded-md" />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Phone Number <span className="text-red-500">*</span></Label>
-                  <Input disabled placeholder="Enter phone number" className="h-14 bg-muted/20 border-muted rounded-xl" />
+                  <Input disabled placeholder="Enter phone number" className="h-10 w-full bg-muted/20 rounded-md" />
                 </div>
 
                 {formData.selectedContactFields.map((id) => {
@@ -315,8 +339,8 @@ export default function LeadCaptureForm() {
                   return (
                     <div key={id} className="space-y-3 group relative">
                       <div className="flex items-center justify-between">
-                         <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{field.label}</Label>
-                         <Button
+                        <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{field.label}</Label>
+                        <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-muted-foreground hover:text-red-600"
@@ -326,7 +350,7 @@ export default function LeadCaptureForm() {
                         </Button>
                       </div>
                       <div className="relative">
-                        <Input disabled placeholder={`Enter ${field.label.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl" />
+                        <Input disabled placeholder={`Enter ${field.label.toLowerCase()}`} className="h-10 w-full bg-background border-muted rounded-md" />
                       </div>
                     </div>
                   )
@@ -335,8 +359,8 @@ export default function LeadCaptureForm() {
                 {formData.manualContactFields.map((f, idx) => (
                   <div key={`manual-${idx}`} className="space-y-3 group relative">
                     <div className="flex items-center justify-between">
-                       <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{f.key}</Label>
-                       <Button
+                      <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{f.key}</Label>
+                      <Button
                         variant="ghost"
                         size="icon"
                         className="h-6 w-6 text-muted-foreground hover:text-red-600"
@@ -346,7 +370,7 @@ export default function LeadCaptureForm() {
                       </Button>
                     </div>
                     <div className="relative">
-                      <Input disabled placeholder={`Enter ${f.key.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl" />
+                      <Input disabled placeholder={`Enter ${f.key.toLowerCase()}`} className="h-10 w-full bg-background border-muted rounded-md" />
                     </div>
                   </div>
                 ))}
@@ -359,12 +383,12 @@ export default function LeadCaptureForm() {
             <section className="p-10 space-y-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.3)]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-purple-500 " />
                   <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Requirements</h3>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 font-black text-[9px] tracking-widest h-9 shadow-lg shadow-red-600/10"
+                  className="bg-red-600 hover:bg-red-700 text-white rounded-md px-6 font-black text-[9px] tracking-widest h-9  "
                   onClick={() => setIsReqSheetOpen(true)}
                 >
                   + ADD FIELDS
@@ -375,7 +399,7 @@ export default function LeadCaptureForm() {
                 {formData.selectedRequirementFields.map((id) => {
                   const field = REQUIREMENT_FIELDS.find(f => f.id === id)
                   if (!field) return null
-                  
+
                   return (
                     <div key={id} className="space-y-4 group relative">
                       <div className="flex items-center justify-between">
@@ -393,9 +417,9 @@ export default function LeadCaptureForm() {
                       {field.options ? (
                         <div className="flex flex-wrap gap-2">
                           {field.options.map((opt) => (
-                            <div 
-                              key={opt} 
-                              className="h-10 px-4 rounded-xl flex items-center justify-center text-[10px] font-black tracking-widest border bg-muted/5 border-muted/60 text-muted-foreground/80 hover:bg-muted/10 cursor-default transition-all"
+                            <div
+                              key={opt}
+                              className="h-10 px-4 rounded-md flex items-center justify-center text-[10px] font-black tracking-widest border bg-muted/5 border-muted/60 text-muted-foreground/80 hover:bg-muted/10 cursor-default transition-all"
                             >
                               {opt}
                             </div>
@@ -403,7 +427,7 @@ export default function LeadCaptureForm() {
                         </div>
                       ) : (
                         <div className="relative">
-                          <Input disabled placeholder={`e.g. ${field.label.split(' ')[0]}...`} className="h-14 bg-background border-muted rounded-xl" />
+                          <Input disabled placeholder={`e.g. ${field.label.split(' ')[0]}...`} className="h-10 w-full bg-background border-muted rounded-md" />
                         </div>
                       )}
                     </div>
@@ -423,7 +447,7 @@ export default function LeadCaptureForm() {
                       </Button>
                     </div>
                     <div className="relative">
-                      <Input disabled placeholder={`Enter ${f.key.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl" />
+                      <Input disabled placeholder={`Enter ${f.key.toLowerCase()}`} className="h-10 w-full bg-background border-muted rounded-md" />
                     </div>
                   </div>
                 ))}
@@ -435,39 +459,36 @@ export default function LeadCaptureForm() {
             {/* ── Acquisition Source Section ── */}
             <section className="p-10 space-y-10">
               <div className="flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]" />
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 " />
                 <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Acquisition Source</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 pt-4">
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Campaign Name <span className="text-red-600">*</span></Label>
-                  <Input 
-                    disabled
-                    placeholder="Enter campaign name" 
+                  <Input
+                    placeholder="Enter campaign name"
                     value={formData.campaignName}
                     onChange={(e) => setFormData({ ...formData, campaignName: e.target.value })}
-                    className="h-14 bg-muted/20 border-muted rounded-xl px-6" 
+                    className="h-10 w-full bg-background border-muted rounded-md px-6"
                   />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Source <span className="text-red-600">*</span></Label>
-                  <Input 
-                    disabled
-                    placeholder="e.g. Facebook, Google" 
+                  <Input
+                    placeholder="e.g. Facebook, Google"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="h-14 bg-muted/20 border-muted rounded-xl px-6" 
+                    className="h-10 w-full bg-background border-muted rounded-md px-6"
                   />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sub Source <span className="text-red-600">*</span></Label>
-                  <Input 
-                    disabled
-                    placeholder="e.g. landing-page-v2" 
+                  <Input
+                    placeholder="e.g. landing-page-v2"
                     value={formData.subSource}
                     onChange={(e) => setFormData({ ...formData, subSource: e.target.value })}
-                    className="h-14 bg-muted/20 border-muted rounded-xl px-6" 
+                    className="h-10 w-full bg-background border-muted rounded-md px-6"
                   />
                 </div>
               </div>
@@ -477,70 +498,129 @@ export default function LeadCaptureForm() {
 
         {/* --- Steps 2 & 3 --- */}
         {currentStep === 2 && (
-          <div className="max-w-5xl mx-auto border rounded-xl shadow-sm bg-card overflow-hidden">
-             <section className="p-10 space-y-12">
-                <div className="space-y-2">
-                  <h2 className="text-2xl font-black">Routing & Project Rules</h2>
-                  <p className="text-muted-foreground text-sm">Select where leads should be tracked and form visibility.</p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tracking Project</Label>
-                    <Select
-                      value={formData.projectId}
-                      onValueChange={(v) => setFormData({ ...formData, projectId: v })}
-                    >
-                      <SelectTrigger className="h-14 rounded-xl bg-background border-muted">
-                        <SelectValue placeholder="Select Target Project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map((p) => (
-                          <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(v) => setFormData({ ...formData, status: v })}
-                    >
-                      <SelectTrigger className="h-14 rounded-xl bg-background border-muted">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+          <div className="max-w-4xl mx-auto border rounded-md bg-card overflow-hidden">
+            <section className="p-10 space-y-12">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black">Routing & Project Rules</h2>
+                <p className="text-muted-foreground text-sm">Select where leads should be tracked and form visibility.</p>
+              </div>
 
-                <div className="p-16 border-2 border-dashed border-muted rounded-xl text-center space-y-6 bg-muted/10">
-                  <div className="h-20 w-20 bg-background rounded-full flex items-center justify-center mx-auto border shadow-sm">
-                    <SlidersHorizontal className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-lg font-black">Post-Sales Distribution</h4>
-                    <p className="text-sm text-muted-foreground max-w-md mx-auto">Automated routing to the Post-Sales and CRM teams will be active soon.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tracking Projects</Label>
+                  <Select
+                    onValueChange={(v) => {
+                      if (!formData.projectIds.includes(v)) {
+                        setFormData({ ...formData, projectIds: [...formData.projectIds, v] });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-md bg-background border-muted">
+                      <SelectValue placeholder="Add Target Project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((p) => (
+                        <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Selected Projects */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {formData.projectIds.map((pid) => {
+                      const proj = projects.find(p => (p._id || p.id) === pid);
+                      return (
+                        <div key={pid} className="flex items-center gap-2 bg-red-50 px-3 py-1.5 rounded-md border border-red-100 text-[10px] font-black text-red-600 uppercase tracking-widest">
+                          {proj?.name || "Unknown Project"}
+                          <button
+                            type="button"
+                            onClick={() => setFormData({
+                              ...formData,
+                              projectIds: formData.projectIds.filter(id => id !== pid)
+                            })}
+                            className="hover:text-red-800"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-             </section>
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Assign Users</Label>
+                  <Select
+                    key={selectResetKey}
+                    onValueChange={(v) => {
+                      const user = users.find(u => (u.id || u._id) === v);
+                      if (user && !formData.assignedPeople.some(p => p.id === (user.id || user._id))) {
+                        setFormData({
+                          ...formData,
+                          assignedPeople: [...formData.assignedPeople, { id: user.id || user._id, name: user.name }]
+                        });
+                        setSelectResetKey(prev => prev + 1);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-md bg-background border-muted">
+                      <SelectValue placeholder="Add Person to Form" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((u) => (
+                        <SelectItem key={u.id || u._id} value={u.id || u._id}>
+                          {u.name} ({u.role})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Selected Users */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {formData.assignedPeople.map((p) => (
+                      <div key={p.id} className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-md border text-xs font-bold">
+                        {p.name}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFormData({
+                              ...formData,
+                              assignedPeople: formData.assignedPeople.filter(person => person.id !== p.id)
+                            });
+                          }}
+                          className="text-muted-foreground hover:text-red-600"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-16 border-2 border-dashed border-muted rounded-md text-center space-y-6 bg-muted/10">
+                <div className="h-20 w-20 bg-background rounded-full flex items-center justify-center mx-auto border ">
+                  <SlidersHorizontal className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-lg font-black">Post-Sales Distribution</h4>
+                  <p className="text-sm text-muted-foreground max-w-md mx-auto">Automated routing to the Post-Sales and CRM teams will be active soon.</p>
+                </div>
+              </div>
+            </section>
           </div>
         )}
 
         {currentStep === 3 && (
-          <div className="max-w-5xl mx-auto border rounded-xl bg-card overflow-hidden">
+          <div className="max-w-4xl mx-auto border rounded-md bg-card overflow-hidden">
             <div className="bg-white dark:bg-zinc-950 p-10 border-b flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold tracking-tighter">FINAL FORM PREVIEW</h2>
                 <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mt-1">Validated structure for lead deployment</p>
               </div>
-              <div className="flex items-center gap-3 px-6 py-2.5 rounded-xl border-2 border-emerald-500/20 bg-emerald-500/5 text-emerald-600 font-black text-[10px] tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+              <div className="flex items-center gap-3 px-6 py-2.5 rounded-md border-2 border-emerald-500/20 bg-emerald-500/5 text-emerald-600 font-black text-[10px] tracking-widest ">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                 Live Configuration
               </div>
@@ -550,31 +630,31 @@ export default function LeadCaptureForm() {
               {/* --- Contact Preview --- */}
               <section className="space-y-10">
                 <div className="flex items-center gap-4">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                  <div className="w-3 h-3 rounded-full bg-blue-500 " />
                   <h3 className="text-base font-black text-foreground uppercase tracking-[0.1em]">Contact Information</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Full Name <span className="text-red-500">*</span></Label>
-                    <Input placeholder="Enter full name" className="h-14 bg-background border-muted rounded-xl px-6" />
+                    <Input placeholder="Enter full name" className="h-10 bg-background border-muted rounded-md px-6" />
                   </div>
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Phone Number <span className="text-red-500">*</span></Label>
-                    <Input placeholder="Enter phone number" className="h-14 bg-background border-muted rounded-xl px-6" />
+                    <Input placeholder="Enter phone number" className="h-10 bg-background border-muted rounded-md px-6" />
                   </div>
                   {formData.selectedContactFields.map((id) => {
                     const field = CONTACT_FIELD_GROUPS.flatMap(g => g.fields).find(f => f.id === id)
                     return field ? (
                       <div key={id} className="space-y-3">
                         <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{field.label}</Label>
-                        <Input placeholder={`Enter ${field.label.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl px-6" />
+                        <Input placeholder={`Enter ${field.label.toLowerCase()}`} className="h-10 bg-background border-muted rounded-md px-6" />
                       </div>
                     ) : null
                   })}
                   {formData.manualContactFields.map((f, idx) => (
                     <div key={`m-c-${idx}`} className="space-y-3">
                       <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{f.key}</Label>
-                      <Input placeholder={`Enter ${f.key.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl px-6" />
+                      <Input placeholder={`Enter ${f.key.toLowerCase()}`} className="h-10 bg-background border-muted rounded-md px-6" />
                     </div>
                   ))}
                 </div>
@@ -585,7 +665,7 @@ export default function LeadCaptureForm() {
               {/* --- Requirements Preview --- */}
               <section className="space-y-10">
                 <div className="flex items-center gap-4">
-                  <div className="w-3 h-3 rounded-full bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+                  <div className="w-3 h-3 rounded-full bg-purple-500 " />
                   <h3 className="text-base font-black text-foreground uppercase tracking-[0.1em]">Property Requirements</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
@@ -598,13 +678,13 @@ export default function LeadCaptureForm() {
                         {field.options ? (
                           <div className="flex flex-wrap gap-2">
                             {field.options.map((opt) => (
-                              <div key={opt} className="h-10 px-4 rounded-xl flex items-center justify-center text-[10px] font-black tracking-widest border border-muted/60 bg-muted/5 text-muted-foreground/80 hover:bg-muted/10 cursor-pointer transition-all">
+                              <div key={opt} className="h-10 px-4 rounded-md flex items-center justify-center text-[10px] font-black tracking-widest border border-muted/60 bg-muted/5 text-muted-foreground/80 hover:bg-muted/10 cursor-pointer transition-all">
                                 {opt}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <Input placeholder={`Enter ${field.label.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl px-6" />
+                          <Input placeholder={`Enter ${field.label.toLowerCase()}`} className="h-10 bg-background border-muted rounded-md px-6" />
                         )}
                       </div>
                     )
@@ -612,7 +692,7 @@ export default function LeadCaptureForm() {
                   {formData.manualRequirementFields.map((f, idx) => (
                     <div key={`m-r-${idx}`} className="space-y-3">
                       <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{f.key}</Label>
-                      <Input placeholder={`Enter ${f.key.toLowerCase()}`} className="h-14 bg-background border-muted rounded-xl px-6" />
+                      <Input placeholder={`Enter ${f.key.toLowerCase()}`} className="h-10 bg-background border-muted rounded-md px-6" />
                     </div>
                   ))}
                 </div>
@@ -623,21 +703,66 @@ export default function LeadCaptureForm() {
               {/* --- Acquisition Preview --- */}
               <section className="space-y-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 " />
                   <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Acquisition Source</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="p-6 rounded-xl bg-muted/20 border border-muted space-y-2">
+                  <div className="p-6 rounded-md bg-muted/20 border border-muted space-y-2">
                     <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Campaign</p>
                     <p className="text-xs font-black text-foreground">{formData.campaignName || " "}</p>
                   </div>
-                  <div className="p-6 rounded-xl bg-muted/20 border border-muted space-y-2">
+                  <div className="p-6 rounded-md bg-muted/20 border border-muted space-y-2">
                     <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Source</p>
                     <p className="text-xs font-black text-foreground">{formData.source || " "}</p>
                   </div>
-                  <div className="p-6 rounded-xl bg-muted/20 border border-muted space-y-2">
+                  <div className="p-6 rounded-md bg-muted/20 border border-muted space-y-2">
                     <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Sub-Source</p>
                     <p className="text-xs font-black text-foreground">{formData.subSource || " "}</p>
+                  </div>
+                </div>
+              </section>
+              <Separator className="opacity-50" />
+              {/* --- Routing & Assignment Preview --- */}
+              <section className="space-y-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 " />
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-widest">Routing & Assignment</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="p-6 rounded-md bg-muted/20 border border-muted space-y-2">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Target Project</p>
+                    <p className="text-xs font-black text-foreground">
+                      {formData.projectIds.length > 0 
+                        ? formData.projectIds.map(pid => projects.find(p => (p._id || p.id) === pid)?.name).filter(Boolean).join(", ")
+                        : "All Projects"}
+                    </p>
+                  </div>
+                  <div className="p-6 rounded-md bg-muted/20 border border-muted space-y-4">
+                    <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Assigned Users</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.assignedPeople.length > 0 ? (
+                        formData.assignedPeople.map((p) => (
+                          <div key={p.id} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-md border text-[10px] font-bold">
+                            {p.name}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData({
+                                  ...formData,
+                                  assignedPeople: formData.assignedPeople.filter(person => person.id !== p.id)
+                                });
+                              }}
+                              className="text-muted-foreground hover:text-red-600 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">No users assigned</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -646,17 +771,17 @@ export default function LeadCaptureForm() {
         )}
 
         {/* ── Action Buttons ── */}
-        <div className="flex justify-end gap-4 pt-12 pb-24 max-w-5xl mx-auto">
+        <div className="flex justify-end gap-4 pt-12 pb-24 max-w-4xl mx-auto">
           <Button
             variant="ghost"
             onClick={() => (currentStep === 1 ? navigate("/automation/leadcapture") : setCurrentStep(currentStep - 1))}
-            className="font-black text-[11px] h-12 px-8 rounded-xl bg-muted/50 text-muted-foreground hover:bg-muted"
+            className="font-black text-[11px] h-12 px-8 rounded-md bg-muted/50 text-muted-foreground hover:bg-muted"
           >
             {currentStep === 1 ? "Cancel" : "Back"}
           </Button>
           <Button
             onClick={() => (currentStep === 3 ? handleSave() : setCurrentStep(currentStep + 1))}
-            className="font-black text-[11px] h-12 px-8 rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-xl transition-all"
+            className="font-black text-[11px] h-12 px-8 rounded-md bg-red-600 text-white hover:bg-red-700  transition-all"
             disabled={loading}
           >
             {loading ? (
@@ -674,15 +799,15 @@ export default function LeadCaptureForm() {
 
       {/* ── Contact Fields Sheet ── */}
       <Sheet open={isContactSheetOpen} onOpenChange={setIsContactSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[480px] p-0 flex flex-col h-full border-l shadow-2xl">
+        <SheetContent className="w-[400px] sm:w-[480px] p-0 flex flex-col h-full border-l ">
           <SheetHeader className="px-6 py-5 border-b shrink-0 bg-zinc-50/50 dark:bg-zinc-900/20">
             <SheetTitle className="text-lg font-black tracking-tight">Field Registry</SheetTitle>
             <SheetDescription className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Add data capture fields</SheetDescription>
           </SheetHeader>
-          
+
           <Tabs defaultValue="prebuilt" className="flex-1 flex flex-col overflow-hidden">
             <div className="px-6 py-4 shrink-0">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg h-10">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-md h-10">
                 <TabsTrigger value="prebuilt" className="text-[11px] font-black uppercase tracking-widest h-8">Pre-built</TabsTrigger>
                 <TabsTrigger value="manual" className="text-[11px] font-black uppercase tracking-widest h-8">Manual Input</TabsTrigger>
               </TabsList>
@@ -700,9 +825,9 @@ export default function LeadCaptureForm() {
                           <div
                             key={f.id}
                             className={cn(
-                              "flex items-center justify-between px-4 py-3.5 rounded-xl border-2 transition-all cursor-pointer group",
+                              "flex items-center justify-between px-4 py-3.5 rounded-md border-2 transition-all cursor-pointer group",
                               isSelected
-                                ? "border-red-600 bg-red-50/20 dark:bg-red-900/10 shadow-sm"
+                                ? "border-red-600 bg-red-50/20 dark:bg-red-900/10 "
                                 : "border-muted/40 bg-background hover:border-muted-foreground/30"
                             )}
                             onClick={() => toggleField(f.id, "contact")}
@@ -729,14 +854,14 @@ export default function LeadCaptureForm() {
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Custom Field Label</Label>
-                    <Input 
-                      placeholder="e.g. Alternate WhatsApp" 
+                    <Input
+                      placeholder="e.g. Alternate WhatsApp"
                       value={newManualKey}
                       onChange={(e) => setNewManualKey(e.target.value)}
-                      className="h-12 rounded-xl bg-muted/10 border-muted focus:ring-1 focus:ring-red-500"
+                      className="h-12 rounded-md bg-muted/10 border-muted focus:ring-1 focus:ring-red-500"
                     />
                   </div>
-                  <Button className="w-full h-12 rounded-xl font-black text-[10px] tracking-widest bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20" onClick={() => addManualField("contact")}>
+                  <Button className="w-full h-12 rounded-md font-black text-[10px] tracking-widest bg-red-600 text-white hover:bg-red-700  " onClick={() => addManualField("contact")}>
                     ADD CUSTOM FIELD
                   </Button>
                 </div>
@@ -745,7 +870,7 @@ export default function LeadCaptureForm() {
           </Tabs>
 
           <div className="p-6 border-t mt-auto shrink-0 bg-white dark:bg-zinc-950">
-            <Button className="w-full h-12 rounded-xl font-black text-[11px] tracking-widest bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20" onClick={() => setIsContactSheetOpen(false)}>
+            <Button className="w-full h-12 rounded-md font-black text-[11px] tracking-widest bg-red-600 text-white hover:bg-red-700  " onClick={() => setIsContactSheetOpen(false)}>
               APPLY REGISTRY
             </Button>
           </div>
@@ -754,15 +879,15 @@ export default function LeadCaptureForm() {
 
       {/* ── Requirements Fields Sheet ── */}
       <Sheet open={isReqSheetOpen} onOpenChange={setIsReqSheetOpen}>
-        <SheetContent className="w-[400px] sm:w-[480px] p-0 flex flex-col h-full border-l shadow-2xl">
+        <SheetContent className="w-[400px] sm:w-[480px] p-0 flex flex-col h-full border-l ">
           <SheetHeader className="px-6 py-5 border-b shrink-0 bg-zinc-50/50 dark:bg-zinc-900/20">
             <SheetTitle className="text-lg font-black tracking-tight">Data Requirements</SheetTitle>
             <SheetDescription className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Define capture fields</SheetDescription>
           </SheetHeader>
-          
+
           <Tabs defaultValue="prebuilt" className="flex-1 flex flex-col overflow-hidden">
             <div className="px-6 py-4 shrink-0">
-              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-lg h-10">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 rounded-md h-10">
                 <TabsTrigger value="prebuilt" className="text-[11px] font-black uppercase tracking-widest h-8">Pre-built</TabsTrigger>
                 <TabsTrigger value="manual" className="text-[11px] font-black uppercase tracking-widest h-8">Manual Input</TabsTrigger>
               </TabsList>
@@ -777,9 +902,9 @@ export default function LeadCaptureForm() {
                       <div
                         key={f.id}
                         className={cn(
-                          "flex items-center justify-between px-4 py-3.5 rounded-xl border-2 transition-all cursor-pointer group",
+                          "flex items-center justify-between px-4 py-3.5 rounded-md border-2 transition-all cursor-pointer group",
                           isSelected
-                            ? "border-red-600 bg-red-50/20 dark:bg-red-900/10 shadow-sm"
+                            ? "border-red-600 bg-red-50/20 dark:bg-red-900/10 "
                             : "border-muted/40 bg-background hover:border-muted-foreground/30"
                         )}
                         onClick={() => toggleField(f.id, "requirement")}
@@ -804,14 +929,14 @@ export default function LeadCaptureForm() {
                 <div className="space-y-4 pt-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Requirement Name</Label>
-                    <Input 
-                      placeholder="e.g. Possession Date" 
+                    <Input
+                      placeholder="e.g. Possession Date"
                       value={newManualKey}
                       onChange={(e) => setNewManualKey(e.target.value)}
-                      className="h-12 rounded-xl bg-muted/10 border-muted focus:ring-1 focus:ring-red-500"
+                      className="h-12 rounded-md bg-muted/10 border-muted focus:ring-1 focus:ring-red-500"
                     />
                   </div>
-                  <Button className="w-full h-12 rounded-xl font-black text-[10px] tracking-widest bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20" onClick={() => addManualField("requirement")}>
+                  <Button className="w-full h-12 rounded-md font-black text-[10px] tracking-widest bg-red-600 text-white hover:bg-red-700  " onClick={() => addManualField("requirement")}>
                     ADD CUSTOM REQUIREMENT
                   </Button>
                 </div>
@@ -820,7 +945,7 @@ export default function LeadCaptureForm() {
           </Tabs>
 
           <div className="p-6 border-t mt-auto shrink-0 bg-white dark:bg-zinc-950">
-            <Button className="w-full h-12 rounded-xl font-black text-[11px] tracking-widest bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-600/20" onClick={() => setIsReqSheetOpen(false)}>
+            <Button className="w-full h-12 rounded-md font-black text-[11px] tracking-widest bg-red-600 text-white hover:bg-red-700  " onClick={() => setIsReqSheetOpen(false)}>
               SAVE REQUIREMENTS
             </Button>
           </div>

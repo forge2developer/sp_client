@@ -135,8 +135,7 @@ export default function DashboardPage() {
   const stepX = 1000 / Math.max(1, data.performance.length - 1);
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 pb-20 animate-in fade-in duration-500">
         {/* Dashboard Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
         <div>
@@ -556,6 +555,5 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
-    </TooltipProvider>
   )
 }

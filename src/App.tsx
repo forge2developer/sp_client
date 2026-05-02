@@ -11,6 +11,7 @@ import ImportData from "./pages/Settings/ImportData"
 import ManageUsers from "./pages/Settings/ManageUsers"
 import { LeadList } from "./pages/Leads/LeadList"
 import { AddLead } from "./pages/Leads/AddLead"
+import { LeadHub } from "./pages/Leads/LeadHub"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
 import { ProjectShowcase } from "./pages/Inventory/project-showcase"
 import Automation from "./pages/Tools/Automations/automation"
@@ -19,6 +20,7 @@ import CampaignBuilder from "./pages/Tools/Automations/campaignbuilder"
 import LeadCapture from "./pages/Tools/Automations/leadcapture"
 import LeadCaptureForm from "./pages/Tools/Automations/leadcaptureform"
 import ThirdParty from "./pages/Tools/Third Party/thirdparty"
+import ToolsHub from "./pages/Tools/tools-hub"
 
 export function App() {
   return (
@@ -45,6 +47,7 @@ export function App() {
         </Route>
         {/*Tools Routes*/}
         <Route element={<DashboardLayout />}>
+          <Route path="/tools_hub" element={<ToolsHub />} />
           <Route path="/automation" element={<Automation />} />
           <Route path="/automation/campaigns" element={<Campaigns />} />
           <Route path="/automation/campaigns/builder" element={<CampaignBuilder />} />
@@ -56,6 +59,7 @@ export function App() {
 
         {/* Lead Management Routes */}
         <Route element={<DashboardLayout />}>
+          <Route path="/lead_hub" element={<LeadHub />} />
           <Route path="/lead-list" element={<LeadList />} />
           <Route path="/add-lead" element={<AddLead />} />
           <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
@@ -65,13 +69,6 @@ export function App() {
           <Route path="/general_settings" element={<GeneralSettings />} />
           <Route path="/manage_users" element={<ManageUsers />} />
           <Route path="/import_data" element={<ImportData />} />
-        </Route>
-
-        {/* Lead Management Routes */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/lead-list" element={<LeadList />} />
-          <Route path="/add-lead" element={<AddLead />} />
-          <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
         </Route>
 
         {/* Redirects */}

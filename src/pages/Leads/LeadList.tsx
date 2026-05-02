@@ -5,7 +5,6 @@ import {
     Search,
     Filter,
     MoreHorizontal,
-    Phone,
     Mail,
     Building2,
     ArrowUpRight,
@@ -13,8 +12,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import api from "@/lib/api";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 interface Lead {
     _id: string;
@@ -94,38 +101,38 @@ export function LeadList() {
                 </CardHeader>
                 <CardContent>
                     <div className="rounded-xl border border-muted overflow-hidden bg-white">
-                        <table className="w-full text-sm">
-                            <thead className="bg-gray-900/[0.03] text-muted-foreground border-b border-muted">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium">Lead Info</th>
-                                    <th className="px-4 py-3 text-left font-medium">Company</th>
-                                    <th className="px-4 py-3 text-left font-medium">Status</th>
-                                    <th className="px-4 py-3 text-left font-medium">Value</th>
-                                    <th className="px-4 py-3 text-left font-medium">Assigned</th>
-                                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-muted">
+                        <Table>
+                            <TableHeader className="bg-gray-900/[0.03]">
+                                <TableRow>
+                                    <TableHead className="font-medium">Lead Info</TableHead>
+                                    <TableHead className="font-medium">Company</TableHead>
+                                    <TableHead className="font-medium">Status</TableHead>
+                                    <TableHead className="font-medium">Value</TableHead>
+                                    <TableHead className="font-medium">Assigned</TableHead>
+                                    <TableHead className="text-right font-medium">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {loading ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                             Loading leads...
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ) : filteredLeads.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                             No leads found.
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ) : (
                                     filteredLeads.map((lead) => (
-                                        <tr
+                                        <TableRow
                                             key={lead._id}
                                             className="hover:bg-muted/30 transition-colors cursor-pointer group"
                                             onClick={() => navigate(`/lead-dashboard/${lead._id}`)}
                                         >
-                                            <td className="px-4 py-4">
+                                            <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                                                         {lead.name.charAt(0)}
@@ -140,40 +147,40 @@ export function LeadList() {
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-4">
+                                            </TableCell>
+                                            <TableCell>
                                                 <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Building2 className="h-3.5 w-3.5" />
                                                     {lead.company || "N/A"}
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-4">
+                                            </TableCell>
+                                            <TableCell>
                                                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[lead.status] || "bg-gray-100 text-gray-700"}`}>
                                                     {lead.status}
                                                 </span>
-                                            </td>
-                                            <td className="px-4 py-4 font-medium text-foreground">
+                                            </TableCell>
+                                            <TableCell className="font-medium text-foreground">
                                                 ${lead.value?.toLocaleString() || "0"}
-                                            </td>
-                                            <td className="px-4 py-4">
+                                            </TableCell>
+                                            <TableCell>
                                                 <div className="flex items-center gap-2 text-xs">
                                                     <User className="h-3.5 w-3.5 text-muted-foreground" />
                                                     {lead.assignedTo}
                                                 </div>
-                                            </td>
-                                            <td className="px-4 py-4 text-right">
+                                            </TableCell>
+                                            <TableCell className="text-right">
                                                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
                                                     e.stopPropagation();
                                                     // Handle actions
                                                 }}>
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
-                                            </td>
-                                        </tr>
+                                            </TableCell>
+                                        </TableRow>
                                     ))
                                 )}
-                            </tbody>
-                        </table>
+                            </TableBody>
+                        </Table>
                     </div>
                 </CardContent>
             </Card>

@@ -68,12 +68,30 @@ export default function DashboardLayout() {
       }
     }
 
-    // 4. Special Case: Project Showcase (sub-page of Inventory Listing)
-    if (!found && pathname.startsWith("/project_showcase/")) {
-      crumbs.push({ label: "Inventory", href: "/inventory_hub" })
-      crumbs.push({ label: "Inventory listing", href: "/inventory_listing" })
-      crumbs.push({ label: "Project Showcase", isPage: true })
-      found = true
+    // 4. Special Case: Complex Routes
+    if (!found) {
+      if (pathname.startsWith("/project_showcase/")) {
+        crumbs.push({ label: "Inventory", href: "/inventory_hub" })
+        crumbs.push({ label: "Inventory listing", href: "/inventory_listing" })
+        crumbs.push({ label: "Project Showcase", isPage: true })
+        found = true
+      } else if (pathname.startsWith("/automation/leadcapture/form")) {
+        crumbs.push({ label: "Tools", href: "/tools_hub" })
+        crumbs.push({ label: "Automation", href: "/automation" })
+        crumbs.push({ label: "Lead Capture", href: "/automation/leadcapture" })
+        crumbs.push({ label: "Form Builder", isPage: true })
+        found = true
+      } else if (pathname === "/automation/leadcapture") {
+        crumbs.push({ label: "Tools", href: "/tools_hub" })
+        crumbs.push({ label: "Automation", href: "/automation" })
+        crumbs.push({ label: "Lead Capture", isPage: true })
+        found = true
+      } else if (pathname.startsWith("/lead-dashboard/")) {
+        crumbs.push({ label: "Lead Directory", href: "/lead_hub" })
+        crumbs.push({ label: "All Leads", href: "/lead-list" })
+        crumbs.push({ label: "Lead Dashboard", isPage: true })
+        found = true
+      }
     }
 
     // 5. Dynamic Fallback: If not in sidebar, analyze URL segments
@@ -124,7 +142,7 @@ export default function DashboardLayout() {
             <ThemeToggle />
           </div> */}
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col gap-0 px-3">
           <Outlet />
         </div>
       </SidebarInset>
