@@ -3,7 +3,8 @@ import {
   BookOpenIcon,
   Settings2Icon,
   LayoutDashboard,
-  Package
+  Package,
+  MessageSquareWarning
 } from "lucide-react"
 
 export const navigationData = {
@@ -94,6 +95,11 @@ export const navigationData = {
       //   },
       // ],
     },
+    {
+      title: "Reports",
+      url: "/report_page",
+      icon: <MessageSquareWarning />
+    }
   ],
   navSecondary: [
     // {

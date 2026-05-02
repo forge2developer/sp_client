@@ -25,7 +25,7 @@ import { navigationData as data } from "@/constants/navigation"
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar
-      className="!border-r-0 bg-white/70 backdrop-blur-xl border-r border-white/20 shadow-xl [&_[data-sidebar=sidebar]]:bg-transparent"
+      className="!border-r-0 bg-white/70 backdrop-blur-xl border-r border-white/20  [&_[data-sidebar=sidebar]]:bg-transparent"
       {...props}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-red-700/10 via-transparent to-white/10 pointer-events-none" />
