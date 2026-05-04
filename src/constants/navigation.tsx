@@ -4,6 +4,7 @@ import {
   Package,
   Wrench,
   Target
+  MessageSquareWarning
 } from "lucide-react"
 
 export const navigationData = {
@@ -98,6 +99,11 @@ export const navigationData = {
         },
       ],
     },
+    {
+      title: "Reports",
+      url: "/report_page",
+      icon: <MessageSquareWarning />
+    }
   ],
   navSecondary: [
     // {
