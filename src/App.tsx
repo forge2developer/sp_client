@@ -12,8 +12,16 @@ import ImportData from "./pages/Settings/ImportData"
 import ManageUsers from "./pages/Settings/ManageUsers"
 import { LeadList } from "./pages/Leads/LeadList"
 import { AddLead } from "./pages/Leads/AddLead"
+import { LeadHub } from "./pages/Leads/LeadHub"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
 import { ProjectShowcase } from "./pages/Inventory/project-showcase"
+import Automation from "./pages/Tools/Automations/automation"
+import Campaigns from "./pages/Tools/Automations/campaigns"
+import CampaignBuilder from "./pages/Tools/Automations/campaignbuilder"
+import LeadCapture from "./pages/Tools/Automations/leadcapture"
+import LeadCaptureForm from "./pages/Tools/Automations/leadcaptureform"
+import ThirdParty from "./pages/Tools/Third Party/thirdparty"
+import ToolsHub from "./pages/Tools/tools-hub"
 import ProfilePage from "./pages/Profile/profile-page"
 import { ReportPage } from "./pages/Reports/Report-page"
 
@@ -42,9 +50,21 @@ export function App() {
           <Route path="/add_inventory" element={<AddInventory />} />
           <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
         </Route>
+        {/*Tools Routes*/}
+        <Route element={<DashboardLayout />}>
+          <Route path="/tools_hub" element={<ToolsHub />} />
+          <Route path="/automation" element={<Automation />} />
+          <Route path="/automation/campaigns" element={<Campaigns />} />
+          <Route path="/automation/campaigns/builder" element={<CampaignBuilder />} />
+          <Route path="/automation/campaigns/builder/:id" element={<CampaignBuilder />} />
+          <Route path="/automation/leadcapture" element={<LeadCapture />} />
+          <Route path="/automation/leadcapture/form" element={<LeadCaptureForm />} />
+          <Route path="/third_party_integrations" element={<ThirdParty />} />
+        </Route>
 
         {/* Lead Management Routes */}
         <Route element={<DashboardLayout />}>
+          <Route path="/lead_hub" element={<LeadHub />} />
           <Route path="/lead-list" element={<LeadList />} />
           <Route path="/add-lead" element={<AddLead />} />
           <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
