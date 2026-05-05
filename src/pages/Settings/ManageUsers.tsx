@@ -166,13 +166,11 @@ export default function ManageUsers() {
   const [loading, setLoading] = React.useState(true)
   const [submitting, setSubmitting] = React.useState(false)
 
-  const organization = "SP_PROMOTERS"
-
   // ── Fetch users via gRPC gateway ──
   const fetchUsers = React.useCallback(async () => {
     try {
       setLoading(true)
-      const response = await grpcApi.get(`/users?organization=${organization}`)
+      const response = await grpcApi.get(`/users`)
       setUsers(response.data.data || [])
     } catch (error) {
       console.error("Error fetching users:", error)
@@ -238,7 +236,6 @@ export default function ManageUsers() {
         email: formData.email,
         phone: formData.phone,
         role: formData.role || "user",
-        organization,
         ...(editingUser ? {} : { password: passwordToSend }),
       }
 
@@ -334,15 +331,6 @@ export default function ManageUsers() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header Section */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manage Users</h1>
-          <p className="text-sm text-muted-foreground">
-            Invite and manage roles for your team members.
-          </p>
-        </div>
-      </div>
 
       {/* Toolbar - matches desk_frontend DataTable layout */}
       <div className="flex justify-between items-center gap-4 py-2 w-full flex-wrap">

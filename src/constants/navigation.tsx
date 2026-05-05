@@ -4,7 +4,8 @@ import {
   Package,
   Wrench,
   Target,
-  MessageSquareWarning
+  MessageSquareWarning,
+  Calendar
 } from "lucide-react"
 
 export const navigationData = {
@@ -103,6 +104,11 @@ export const navigationData = {
       title: "Reports",
       url: "/report_page",
       icon: <MessageSquareWarning />
+    },
+    {
+      title: "Calendar",
+      url: "/calendar_view",
+      icon: <Calendar />
     }
   ],
   navSecondary: [
@@ -124,4 +130,46 @@ export const navigationData = {
       icon: <LayoutDashboard />,
     }
   ],
+  // ─── Hidden Routes for Breadcrumb Generation ─────────────────────────────────
+  // These are routes that don't appear in the sidebar but need a defined path
+  breadcrumbOverrides: [
+    {
+      path: "/automation/campaigns",
+      label: "Campaigns",
+      parent: "/automation",
+      isPage: true
+    },
+    {
+      path: "/automation/campaigns/builder",
+      label: "Campaign Builder",
+      parent: "/automation/campaigns",
+      isPage: true
+    },
+    {
+      path: "/automation/leadcapture",
+      label: "Lead Capture",
+      parent: "/automation",
+      isPage: true
+    },
+    {
+      path: "/automation/leadcapture/form",
+      label: "Form Builder",
+      parent: "/automation/leadcapture",
+      isPage: true
+    },
+    {
+      path: "/lead-dashboard",
+      label: "Lead Dashboard",
+      parent: "/lead-list",
+      isPage: true,
+      matchStart: true // Matches /lead-dashboard/:id
+    },
+    {
+      path: "/project_showcase",
+      label: "Project Showcase",
+      parent: "/inventory_listing",
+      isPage: true,
+      matchStart: true // Matches /project_showcase/:id
+    }
+  ]
 }

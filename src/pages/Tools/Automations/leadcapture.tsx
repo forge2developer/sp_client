@@ -50,7 +50,6 @@ import {
   Loader2,
   ClipboardIcon,
   X,
-  Columns3,
   ChevronDown,
   Power,
 } from "lucide-react"
@@ -70,7 +69,7 @@ interface LeadCaptureConfig {
 }
 
 // ─── Organization Constant ─────────────────────────────────────────────────────
-const organization = "SP_PROMOTERS"
+
 
 // ─── Column Definitions ────────────────────────────────────────────────────────
 const getColumns = (
@@ -250,8 +249,8 @@ export default function LeadCapture() {
     setLoading(true)
     try {
       const [configsRes, projectsRes] = await Promise.all([
-        grpcApi.get(`/lead-capture-configs?organization=${organization}`),
-        grpcApi.get(`/projects?organization=${organization}`)
+        grpcApi.get(`/lead-capture-configs`),
+        grpcApi.get(`/projects`)
       ])
       setForms(configsRes.data.data || [])
       setProjects(projectsRes.data.data || [])
@@ -307,10 +306,6 @@ export default function LeadCapture() {
   // ── Table Columns ──
   const columns = useMemo(() => getColumns(handleEdit, setDeleteTarget, handleStatusToggle, projects), [handleEdit, handleStatusToggle, projects])
 
-  function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(" ")
-  }
-
   const table = useReactTable({
     data: forms,
     columns,
@@ -364,16 +359,6 @@ export default function LeadCapture() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* ── Header Section ── */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Lead Capture Forms</h1>
-          <p className="text-sm text-muted-foreground">
-            Create and manage reusable lead capture configurations.
-          </p>
-        </div>
-      </div>
 
       {/* ── Toolbar ── */}
       <div className="flex justify-between items-center gap-4 py-2 w-full flex-wrap">
@@ -504,7 +489,7 @@ export default function LeadCapture() {
                       <h3 className="text-lg font-bold mb-1">No Forms Created</h3>
                       <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                         No lead capture forms have been configured for your
-                        organization yet.
+                        system.
                       </p>
                     </div>
                     <Button onClick={handleCreate} className="mt-2">

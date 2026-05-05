@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/sidebar"
 import { Outlet, useLocation, Link } from "react-router-dom"
 import React from "react"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 import { navigationData } from "@/constants/navigation"
 
@@ -29,73 +28,52 @@ export default function DashboardLayout() {
       .replace(/\b\w/g, (l) => l.toUpperCase())
   }
 
-  // Define breadcrumb structure based on route
+  // ─── Data-Driven Breadcrumb Generator ───
   const getBreadcrumbs = () => {
-    // 1. Check if it's the dashboard itself
-    if (pathname === "/dashboard") {
-      return [{ label: "Dashboard", isPage: true }]
-    }
-
     const crumbs: { label: string; href?: string; isPage?: boolean }[] = [
       { label: "Home", href: "/dashboard" },
     ]
 
-    // 2. Automatic Scan: Check Sidebar "navMain" (Groups with sub-items)
-    let found = false
-    navigationData.navMain.forEach((group) => {
-      const activeSubItem = group.items?.find((sub) => sub.url === pathname)
+    if (pathname === "/dashboard") return [{ label: "Dashboard", isPage: true }]
 
-      if (activeSubItem) {
-        // If it's a sub-item, show both parent and sub-item (if they are different)
-        if (group.title !== activeSubItem.title) {
-          crumbs.push({ label: group.title, href: group.url || "#" })
+    // 1. Recursive finder to build the path from navigationData
+    const buildPath = (path: string): { label: string; href?: string; isPage?: boolean }[] => {
+      // Check Sidebar Main Nav
+      for (const group of navigationData.navMain) {
+        if (group.url === path) return [{ label: group.title, isPage: true }]
+        const sub = group.items?.find(i => i.url === path)
+        if (sub) return [{ label: group.title, href: group.url }, { label: sub.title, isPage: true }]
+      }
+
+      // Check Sidebar Single Items (Projects)
+      const proj = navigationData.projects.find(p => p.url === path)
+      if (proj) return [{ label: proj.name, isPage: true }]
+
+      // Check Overrides (Complex/Dynamic routes)
+      const override = (navigationData as any).breadcrumbOverrides?.find((o: any) => 
+        o.matchStart ? path.startsWith(o.path) : path === o.path
+      )
+      
+      if (override) {
+        const parentCrumbs = override.parent ? buildPath(override.parent) : []
+        // Convert the last parent crumb from isPage to a link if we are adding a child
+        if (parentCrumbs.length > 0) {
+          const last = parentCrumbs[parentCrumbs.length - 1]
+          if (last.isPage) {
+            last.isPage = false
+            last.href = override.parent
+          }
         }
-        crumbs.push({ label: activeSubItem.title, isPage: true })
-        found = true
-      } else if (group.url === pathname) {
-        // If it's just the top-level hub
-        crumbs.push({ label: group.title, isPage: true })
-        found = true
+        return [...parentCrumbs, { label: override.label, isPage: override.isPage }]
       }
-    })
 
-    // 3. Automatic Scan: Check Sidebar "projects" (Single items)
-    if (!found) {
-      const projectMatch = navigationData.projects.find((p) => p.url === pathname)
-      if (projectMatch) {
-        crumbs.push({ label: projectMatch.name, isPage: true })
-        found = true
-      }
+      return []
     }
 
-    // 4. Special Case: Complex Routes
-    if (!found) {
-      if (pathname.startsWith("/project_showcase/")) {
-        crumbs.push({ label: "Inventory", href: "/inventory_hub" })
-        crumbs.push({ label: "Inventory listing", href: "/inventory_listing" })
-        crumbs.push({ label: "Project Showcase", isPage: true })
-        found = true
-      } else if (pathname.startsWith("/automation/leadcapture/form")) {
-        crumbs.push({ label: "Tools", href: "/tools_hub" })
-        crumbs.push({ label: "Automation", href: "/automation" })
-        crumbs.push({ label: "Lead Capture", href: "/automation/leadcapture" })
-        crumbs.push({ label: "Form Builder", isPage: true })
-        found = true
-      } else if (pathname === "/automation/leadcapture") {
-        crumbs.push({ label: "Tools", href: "/tools_hub" })
-        crumbs.push({ label: "Automation", href: "/automation" })
-        crumbs.push({ label: "Lead Capture", isPage: true })
-        found = true
-      } else if (pathname.startsWith("/lead-dashboard/")) {
-        crumbs.push({ label: "Lead Directory", href: "/lead_hub" })
-        crumbs.push({ label: "All Leads", href: "/lead-list" })
-        crumbs.push({ label: "Lead Dashboard", isPage: true })
-        found = true
-      }
-    }
+    const foundCrumbs = buildPath(pathname)
 
-    // 5. Dynamic Fallback: If not in sidebar, analyze URL segments
-    if (!found) {
+    // 2. Fallback: Split URL segments if nothing found in navigationData
+    if (foundCrumbs.length === 0) {
       const segments = pathname.split("/").filter(Boolean)
       segments.forEach((segment, index) => {
         const isLast = index === segments.length - 1
@@ -105,9 +83,10 @@ export default function DashboardLayout() {
           href: isLast ? undefined : `/${segments.slice(0, index + 1).join("/")}`,
         })
       })
+      return crumbs
     }
 
-    return crumbs
+    return [...crumbs.slice(0, 1), ...foundCrumbs]
   }
 
   const breadcrumbs = getBreadcrumbs()

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { getImageUrl } from "@/lib/api";
 import {
   Plus,
@@ -11,14 +11,10 @@ import {
   Save,
   Loader2,
   CheckCircle2,
-  X,
   ImagePlus,
-  MapPin,
   CornerDownRight,
   MousePointer2,
   Settings2,
-  Maximize2,
-  LayoutGrid,
   Info,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -27,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -39,8 +36,8 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-  ContextMenuLabel,
   ContextMenuSeparator,
+  ContextMenuLabel,
 } from "@/components/ui/context-menu";
 import {
   Dialog,
@@ -76,7 +73,7 @@ export function AddInventory() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [phases, setPhases] = useState<Phase[]>([]);
 
-  const organization = "SP_PROMOTERS";
+
 
   // Selection Modes
   const [cornerSelectMode, setCornerSelectMode] = useState(false);
@@ -102,11 +99,11 @@ export function AddInventory() {
   const fetchProjectForEdit = async () => {
     try {
       setFetching(true);
-      const response = await api.get(`/projects/${editId}?organization=${organization}`);
+      const response = await api.get(`/projects/${editId}`);
       const p: Project = response.data.data;
 
       setName(p.name);
-      setLocation(p.location);
+      setLocation(p.location || "");
       setPhases(p.phases || []);
 
       if (p.layoutImages) {
@@ -237,7 +234,7 @@ export function AddInventory() {
 
   const openSingleEdit = (phIdx: number, plIdx: number, plot: Plot) => {
     setEditingPlot({ phIdx, plIdx, plot });
-    setSingleSize(plot.size || "");
+    setSingleSize(plot.size ? plot.size.toString() : "");
     setSingleFacing(plot.facing || "");
   };
 
@@ -249,7 +246,11 @@ export function AddInventory() {
       const updated = [...prev];
       const ph = { ...updated[phIdx] };
       const plots = [...ph.plots];
-      plots[plIdx] = { ...plots[plIdx], size: singleSize, facing: singleFacing };
+      plots[plIdx] = { 
+        ...plots[plIdx], 
+        size: singleSize ? Number(singleSize) : undefined, 
+        facing: singleFacing 
+      };
       ph.plots = plots;
       updated[phIdx] = ph;
       return updated;
@@ -268,7 +269,7 @@ export function AddInventory() {
           if (selectedPlots.has(plot.plotId)) {
             return {
               ...plot,
-              size: bulkSize || plot.size,
+              size: bulkSize ? Number(bulkSize) : plot.size,
               facing: bulkFacing !== "none" ? bulkFacing : plot.facing,
             };
           }
@@ -311,7 +312,7 @@ export function AddInventory() {
       const formData = new FormData();
       formData.append("name", name);
       formData.append("location", location);
-      formData.append("organization", organization);
+
       formData.append("phases", JSON.stringify(phases));
 
       const existingImages = images.filter(img => img.isExisting).map(img => img.preview);
@@ -367,8 +368,10 @@ export function AddInventory() {
               <Label htmlFor="size" className="text-right">SQFT</Label>
               <Input
                 id="size"
+                type="text"
+                inputMode="numeric"
                 value={singleSize}
-                onChange={(e) => setSingleSize(e.target.value)}
+                onChange={(e) => setSingleSize(e.target.value.replace(/[^0-9]/g, ""))}
                 className="col-span-3"
                 placeholder="e.g. 1200"
               />
@@ -380,15 +383,18 @@ export function AddInventory() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select facing" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="North">North</SelectItem>
-                    <SelectItem value="South">South</SelectItem>
-                    <SelectItem value="East">East</SelectItem>
-                    <SelectItem value="West">West</SelectItem>
-                    <SelectItem value="North-East">North-East</SelectItem>
-                    <SelectItem value="North-West">North-West</SelectItem>
-                    <SelectItem value="South-East">South-East</SelectItem>
-                    <SelectItem value="South-West">South-West</SelectItem>
+                  <SelectContent className="max-h-[280px]">
+                    <ScrollArea className="h-full w-full">
+                      <SelectItem value="North">North</SelectItem>
+                      <SelectItem value="South">South</SelectItem>
+                      <SelectItem value="East">East</SelectItem>
+                      <SelectItem value="West">West</SelectItem>
+                      <SelectItem value="North-East">North-East</SelectItem>
+                      <SelectItem value="North-West">North-West</SelectItem>
+                      <SelectItem value="South-East">South-East</SelectItem>
+                      <SelectItem value="South-West">South-West</SelectItem>
+                      <ScrollBar />
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               </div>
@@ -595,10 +601,12 @@ export function AddInventory() {
                   <Label htmlFor="bulk-size" className="text-xs font-bold">SIZE (SQFT)</Label>
                   <Input
                     id="bulk-size"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="e.g. 1200"
                     className="h-9 w-32 bg-background"
                     value={bulkSize}
-                    onChange={(e) => setBulkSize(e.target.value)}
+                    onChange={(e) => setBulkSize(e.target.value.replace(/[^0-9]/g, ""))}
                   />
                 </div>
 
@@ -608,16 +616,19 @@ export function AddInventory() {
                     <SelectTrigger id="bulk-facing" className="h-9 w-32 bg-background">
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Keep Same</SelectItem>
-                      <SelectItem value="North">North</SelectItem>
-                      <SelectItem value="South">South</SelectItem>
-                      <SelectItem value="East">East</SelectItem>
-                      <SelectItem value="West">West</SelectItem>
-                      <SelectItem value="North-East">North-East</SelectItem>
-                      <SelectItem value="North-West">North-West</SelectItem>
-                      <SelectItem value="South-East">South-East</SelectItem>
-                      <SelectItem value="South-West">South-West</SelectItem>
+                    <SelectContent className="max-h-[280px]">
+                      <ScrollArea className="h-full w-full">
+                        <SelectItem value="none">Keep Same</SelectItem>
+                        <SelectItem value="North">North</SelectItem>
+                        <SelectItem value="South">South</SelectItem>
+                        <SelectItem value="East">East</SelectItem>
+                        <SelectItem value="West">West</SelectItem>
+                        <SelectItem value="North-East">North-East</SelectItem>
+                        <SelectItem value="North-West">North-West</SelectItem>
+                        <SelectItem value="South-East">South-East</SelectItem>
+                        <SelectItem value="South-West">South-West</SelectItem>
+                        <ScrollBar />
+                      </ScrollArea>
                     </SelectContent>
                   </Select>
                 </div>
@@ -689,7 +700,7 @@ export function AddInventory() {
                             onClick={() => handlePlotClick(phIdx, plIdx)}
                             className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
                               } ${isSelected
-                                ? "bg-primary text-primary-foreground border-primary scale-105 z-10 ring-2 ring-primary ring-offset-2"
+                                ? "bg-red-50 text-red-700 border-red-500 scale-105 z-10 ring-2 ring-red-200 ring-offset-2"
                                 : plot.isCorner
                                   ? "bg-amber-500/15 text-amber-700 border-amber-500"
                                   : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"

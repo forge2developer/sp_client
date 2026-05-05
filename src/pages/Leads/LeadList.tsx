@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Plus,
     Search,
@@ -72,15 +72,7 @@ export function LeadList() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Lead Management</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track your potential customers.</p>
-                </div>
-                <Button onClick={() => navigate("/add-lead")} className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 font-bold shadow-lg shadow-red-600/20">
-                    <Plus className="h-4 w-4 mr-2" /> Add New Lead
-                </Button>
-            </div>
+            
 
             <Card className="border-none shadow-sm bg-card">
                 <CardHeader className="pb-3">

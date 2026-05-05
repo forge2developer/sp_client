@@ -27,6 +27,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -199,7 +200,7 @@ export function InventoryListing() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const navigate = useNavigate();
 
-  const organization = "SP_PROMOTERS";
+
 
   useEffect(() => {
     fetchProjects();
@@ -208,7 +209,7 @@ export function InventoryListing() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await grpcApi.get(`/projects?organization=${organization}`);
+      const response = await grpcApi.get(`/projects`);
       setProjects(response.data.data);
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -220,7 +221,7 @@ export function InventoryListing() {
   const handleDelete = async (productId: number) => {
     if (window.confirm("Are you sure you want to delete this project?")) {
       try {
-        await api.delete(`/projects/${productId}?organization=${organization}`);
+        await api.delete(`/projects/${productId}`);
         fetchProjects();
       } catch (error: any) {
         console.error("Error deleting project:", error);
@@ -338,10 +339,13 @@ export function InventoryListing() {
               <SelectTrigger className="h-9 w-[70px] dark:bg-muted/50">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent side="top">
-                <SelectItem value="15">15</SelectItem>
-                <SelectItem value="30">30</SelectItem>
-                <SelectItem value="50">50</SelectItem>
+              <SelectContent side="top" className="max-h-[280px]">
+                <ScrollArea className="h-full w-full">
+                  <SelectItem value="15">15</SelectItem>
+                  <SelectItem value="30">30</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <ScrollBar />
+                </ScrollArea>
               </SelectContent>
             </Select>
           </div>

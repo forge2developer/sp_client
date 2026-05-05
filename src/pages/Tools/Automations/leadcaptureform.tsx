@@ -26,17 +26,14 @@ import {
   SlidersHorizontal,
   FileText,
   ArrowRight,
-  ArrowLeft,
   Trash2,
-  Plus,
   Loader2,
-  CircleCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import api, { grpcApi, type Project } from "@/lib/api"
 
 // ─── Constants & Groups ────────────────────────────────────────────────────────
-const organization = "SP_PROMOTERS"
+
 
 const CONTACT_FIELD_GROUPS = [
   {
@@ -113,6 +110,7 @@ export default function LeadCaptureForm() {
   const [projects, setProjects] = useState<Project[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [selectResetKey, setSelectResetKey] = useState(0)
+  const [, setDbSources] = useState<{ name: string }[]>([])
 
   // Form State
   const [formData, setFormData] = useState({
@@ -134,12 +132,14 @@ export default function LeadCaptureForm() {
     const init = async () => {
       setFetching(true)
       try {
-        const [projRes, userRes] = await Promise.all([
-          grpcApi.get(`/projects?organization=${organization}`),
-          grpcApi.get(`/users?organization=${organization}`),
+        const [projRes, userRes, sourceRes] = await Promise.all([
+          grpcApi.get(`/projects`),
+          grpcApi.get(`/users`),
+          api.get(`/sources`),
         ])
         setProjects(projRes.data.data || [])
         setUsers(userRes.data.data || [])
+        setDbSources(sourceRes.data.data || [])
 
         if (formId) {
           const res = await grpcApi.get(`/lead-capture-configs/${formId}`)
@@ -200,7 +200,7 @@ export default function LeadCaptureForm() {
     setLoading(true)
     try {
       const payload = {
-        organization,
+
         name: formData.name || `${formData.source || "Manual"} Lead Form`,
         source: formData.source || "Manual",
         campaign_name: formData.campaignName,
@@ -467,28 +467,31 @@ export default function LeadCaptureForm() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Campaign Name <span className="text-red-600">*</span></Label>
                   <Input
+                    disabled
                     placeholder="Enter campaign name"
                     value={formData.campaignName}
                     onChange={(e) => setFormData({ ...formData, campaignName: e.target.value })}
-                    className="h-10 w-full bg-background border-muted rounded-md px-6"
+                    className="h-10 w-full bg-muted/20 border-transparent rounded-md px-4"
                   />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Source <span className="text-red-600">*</span></Label>
                   <Input
-                    placeholder="e.g. Facebook, Google"
+                    disabled
+                    placeholder="e.g. Facebook"
                     value={formData.source}
                     onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                    className="h-10 w-full bg-background border-muted rounded-md px-6"
+                    className="h-10 w-full bg-muted/20 border-transparent rounded-md px-4"
                   />
                 </div>
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sub Source <span className="text-red-600">*</span></Label>
                   <Input
+                    disabled
                     placeholder="e.g. landing-page-v2"
                     value={formData.subSource}
                     onChange={(e) => setFormData({ ...formData, subSource: e.target.value })}
-                    className="h-10 w-full bg-background border-muted rounded-md px-6"
+                    className="h-10 w-full bg-muted/20 border-transparent rounded-md px-4"
                   />
                 </div>
               </div>
@@ -519,11 +522,13 @@ export default function LeadCaptureForm() {
                       <SelectValue placeholder="Add Target Project" />
                     </SelectTrigger>
                     <SelectContent>
-                      {projects.map((p) => (
-                        <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
+                      <ScrollArea className="max-h-[280px]">
+                        {projects.map((p) => (
+                          <SelectItem key={p._id || p.id} value={p._id || p.id || "unknown"}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
                     </SelectContent>
                   </Select>
 
@@ -568,11 +573,13 @@ export default function LeadCaptureForm() {
                       <SelectValue placeholder="Add Person to Form" />
                     </SelectTrigger>
                     <SelectContent>
-                      {users.map((u) => (
-                        <SelectItem key={u.id || u._id} value={u.id || u._id}>
-                          {u.name} ({u.role})
-                        </SelectItem>
-                      ))}
+                      <ScrollArea className="max-h-[280px]">
+                        {users.map((u) => (
+                          <SelectItem key={u.id || u._id} value={u.id || u._id}>
+                            {u.name} ({u.role})
+                          </SelectItem>
+                        ))}
+                      </ScrollArea>
                     </SelectContent>
                   </Select>
 

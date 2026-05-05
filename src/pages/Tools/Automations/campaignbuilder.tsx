@@ -3,9 +3,6 @@ import { useNavigate, useParams } from "react-router-dom"
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,16 +21,15 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import {
   Check,
-  Target,
   Plus,
   Trash2,
   Settings,
   ListPlus,
   Layers,
   LayoutList,
-  ArrowRight,
   ArrowLeft,
   Loader2,
   ChevronRight,
@@ -43,7 +39,7 @@ import { cn } from "@/lib/utils"
 import api, { grpcApi, type Project } from "@/lib/api"
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
-const organization = "SP_PROMOTERS"
+
 
 const STEPS = [
   { id: 1, title: "Step 1", label: "Campaign Details", icon: Settings },
@@ -84,15 +80,7 @@ export default function CampaignBuilder() {
   const [fetching, setFetching] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
   
-  // DB Sources (e.g. Google Ads, Facebook)
-  const dbSources = [
-    { name: "Google Ads" },
-    { name: "Facebook Ads" },
-    { name: "Instagram" },
-    { name: "Direct Referral" },
-    { name: "Offline Marketing" },
-    { name: "WhatsApp" },
-  ]
+  const [dbSources, setDbSources] = useState<{ name: string }[]>([])
 
   // Form State
   const [campaignConfig, setCampaignConfig] = useState<CampaignConfig>({
@@ -107,8 +95,12 @@ export default function CampaignBuilder() {
     const init = async () => {
       setFetching(true)
       try {
-        const projRes = await grpcApi.get(`/projects?organization=${organization}`)
+        const [projRes, sourceRes] = await Promise.all([
+          grpcApi.get(`/projects`),
+          api.get(`/sources`)
+        ])
         setProjects(projRes.data.data || [])
+        setDbSources(sourceRes.data.data || [])
 
         if (isEditMode) {
           const res = await grpcApi.get(`/campaigns/${id}`)
@@ -119,6 +111,12 @@ export default function CampaignBuilder() {
             sources: camp.sources || [],
           })
           if (camp.project?.projectId) setSelectedProjectId(camp.project.projectId)
+        } else {
+          setCampaignConfig({
+            campaignName: "",
+            sources: [],
+          })
+          setSelectedProjectId("none")
         }
       } catch (error) {
         console.error("Initialization failed:", error)
@@ -188,12 +186,36 @@ export default function CampaignBuilder() {
     })
   }
 
+  const handleNext = () => {
+    if (currentStep === 1) {
+      if (!campaignConfig.campaignName.trim()) {
+        alert("Please enter a campaign name to proceed.")
+        return
+      }
+    }
+    
+    // Add other step validations if needed
+    if (currentStep === 2) {
+      if (campaignConfig.sources.length === 0) {
+        alert("Please add at least one source.")
+        return
+      }
+      const hasEmptySource = campaignConfig.sources.some(s => !s.sourceName)
+      if (hasEmptySource) {
+        alert("Please select a name for all sources.")
+        return
+      }
+    }
+
+    setCurrentStep(prev => prev + 1)
+  }
+
   const handleSave = async () => {
     setLoading(true)
     try {
       const payload = {
         ...campaignConfig,
-        organization,
+
         project: selectedProjectId === "none" ? undefined : { projectId: selectedProjectId },
       }
 
@@ -220,51 +242,56 @@ export default function CampaignBuilder() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto w-full py-8 px-4 space-y-12">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" onClick={() => navigate("/automation/campaigns")} className="rounded-xl h-10 w-10">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{isEditMode ? "Edit Campaign" : "New Campaign Generator"}</h1>
-          <p className="text-sm text-muted-foreground">Follow the steps to configure your campaign hierarchy.</p>
-        </div>
-      </div>
+    <div className="max-w-5xl mx-auto w-full py-2 px-4 space-y-12">
+      
+      {/* ── Stepper ── */}
+      <div className="flex items-center justify-center py-0 gap-0 max-w-4xl mx-auto">
+        {STEPS.map((step, idx) => {
+          const isActive = currentStep === step.id
+          const isCompleted = currentStep > step.id
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-12">
-        {/* ── Stepper ── */}
-        <div className="flex lg:flex-col gap-6 overflow-x-auto pb-4 lg:pb-0 p-4">
-          {STEPS.map((step, idx) => {
-            const isActive = currentStep === step.id
-            const isCompleted = currentStep > step.id
-            return (
-              <div key={step.id} className="flex items-center gap-4 min-w-[200px]">
+          return (
+            <div key={step.id} className="flex items-center">
+              <div className="flex flex-col items-center relative">
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2 shrink-0",
+                    "w-15 h-15 rounded-full flex items-center justify-center transition-all duration-500 border-4 cursor-pointer",
                     isCompleted
                       ? "bg-emerald-500 border-emerald-500 text-white"
                       : isActive
-                      ? "bg-red-600 border-red-600 text-white scale-110 shadow-lg shadow-red-600/30 ring-4 ring-red-50 dark:ring-red-950/20"
-                      : "bg-muted border-muted text-muted-foreground"
+                        ? "bg-red-600 border-red-600 text-white scale-110 ring-4 ring-red-50 dark:ring-red-950/20"
+                        : "bg-white dark:bg-zinc-950 border-muted text-muted-foreground"
                   )}
+                  onClick={() => (isCompleted || isActive || currentStep > step.id) && setCurrentStep(step.id)}
                 >
-                  {isCompleted ? <Check className="h-5 w-5" /> : <step.icon className="h-5 w-5" />}
+                  {isCompleted ? <Check className="h-10 w-10" /> : <step.icon className="h-10 w-10" />}
                 </div>
-                <div className="flex flex-col">
-                  <span className={cn("text-[10px] font-black tracking-widest", isActive ? "text-foreground" : "text-muted-foreground")}>
+                <div className="text-center absolute -bottom-14 whitespace-nowrap">
+                  <p className={cn("text-[10px] font-black tracking-widest", isActive ? "text-zinc-900 dark:text-zinc-100" : "text-muted-foreground")}>
                     {step.title}
-                  </span>
-                  <span className={cn("text-xs font-bold", isActive ? "text-red-600" : "text-muted-foreground")}>
+                  </p>
+                  <p className={cn("text-[10px] font-black tracking-widest", isActive ? "text-red-600" : "text-muted-foreground")}>
                     {step.label}
-                  </span>
+                  </p>
                 </div>
               </div>
-            )
-          })}
-        </div>
 
+              {idx < STEPS.length - 1 && (
+                <div className="w-32 md:w-48 h-2 bg-muted mx-0 rounded-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "h-full bg-red-600 transition-all duration-500",
+                      isCompleted ? "w-full" : "w-0"
+                    )}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="max-w-4xl mx-auto w-full pt-12">
         {/* ── Content ── */}
         <div className="">
           <Card className="rounded-3xl border-muted/50 shadow-sm min-h-[500px] flex flex-col">
@@ -302,13 +329,16 @@ export default function CampaignBuilder() {
                         <SelectTrigger className="h-12 bg-background rounded-xl">
                           <SelectValue placeholder="Select a project" />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Universal Project (Assign per sub-source)</SelectItem>
-                          {projects.map((p) => (
-                            <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="max-h-[280px]">
+                          <ScrollArea className="h-full w-full">
+                            <SelectItem value="none">No Universal Project (Assign per sub-source)</SelectItem>
+                            {projects.map((p) => (
+                              <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                            <ScrollBar />
+                          </ScrollArea>
                         </SelectContent>
                       </Select>
                     </div>
@@ -339,10 +369,13 @@ export default function CampaignBuilder() {
                               <SelectTrigger className="h-12 bg-background">
                                 <SelectValue placeholder="Select Lead Source" />
                               </SelectTrigger>
-                              <SelectContent>
-                                {dbSources.map(s => (
-                                  <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
-                                ))}
+                              <SelectContent className="max-h-[280px]">
+                                <ScrollArea className="h-full w-full">
+                                  {dbSources.map(s => (
+                                    <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
+                                  ))}
+                                  <ScrollBar />
+                                </ScrollArea>
                               </SelectContent>
                             </Select>
                           </div>
@@ -390,11 +423,14 @@ export default function CampaignBuilder() {
                                     <SelectTrigger className="h-10">
                                       <SelectValue placeholder="All Projects" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="none">Default Project</SelectItem>
-                                      {projects.map((p) => (
-                                        <SelectItem key={p._id || p.id} value={p._id || p.id || ""}>{p.name}</SelectItem>
-                                      ))}
+                                    <SelectContent className="max-h-[280px]">
+                                      <ScrollArea className="h-full w-full">
+                                        <SelectItem value="none">Default Project</SelectItem>
+                                        {projects.map((p) => (
+                                          <SelectItem key={p._id || p.id} value={p._id || p.id || "unknown"}>{p.name}</SelectItem>
+                                        ))}
+                                        <ScrollBar />
+                                      </ScrollArea>
                                     </SelectContent>
                                   </Select>
                                 </div>
@@ -469,7 +505,7 @@ export default function CampaignBuilder() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> {currentStep === 1 ? "Cancel" : "Back"}
               </Button>
               <Button
-                onClick={() => (currentStep === 4 ? handleSave() : setCurrentStep(currentStep + 1))}
+                onClick={() => (currentStep === 4 ? handleSave() : handleNext())}
                 className="font-black h-12 px-12 rounded-xl bg-red-600 text-white hover:bg-red-700 shadow-xl transition-all"
                 disabled={loading}
               >

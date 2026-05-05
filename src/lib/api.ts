@@ -7,11 +7,29 @@ const api = axios.create({
   baseURL: `${API_BASE}/api`,
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;
 
 // ─── gRPC Gateway API (for fetching data) ──────────────────────────────────────
 const grpcApi = axios.create({
   baseURL: `${API_BASE}/api/grpc`,
+});
+
+// Add request interceptor to include auth token
+grpcApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export { grpcApi, API_BASE };
@@ -62,7 +80,6 @@ export interface Project {
   _id?: string;
   id?: string;
   product_id: number;
-  organization: string;
   property: string;
   name: string;
   location?: string;
@@ -84,7 +101,6 @@ export interface User {
   email: string;
   phone: string;
   role: string;
-  organization?: string;
   profile_id?: number;
   isActive?: boolean;
   createdAt?: string;
