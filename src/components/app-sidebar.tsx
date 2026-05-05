@@ -21,8 +21,18 @@ import { BotIcon, BookOpenIcon, Settings2Icon, LifeBuoyIcon, SendIcon, TerminalI
 
 
 import { navigationData as data } from "@/constants/navigation"
+import { useAuth } from "@/context/AuthContext"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useAuth()
+
+  // Use dynamic user data from AuthContext, fallback to static if not logged in
+  const userData = user ? {
+    name: user.name,
+    email: user.email,
+    avatar: "/avatars/default.jpg" // Or user.avatar if available
+  } : data.user
+
   return (
     <Sidebar
       variant="sidebar"
@@ -54,7 +64,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter className="relative z-10 border-t border-gray-100 bg-white/50 backdrop-blur-sm">
-        <NavUser user={data.user} />
+        <NavUser user={userData} />
       </SidebarFooter>
     </Sidebar>
   )

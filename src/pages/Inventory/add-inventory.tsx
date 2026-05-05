@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { getImageUrl } from "@/lib/api";
 import {
   Plus,
   Trash2,
@@ -109,7 +110,10 @@ export function AddInventory() {
       setPhases(p.phases || []);
 
       if (p.layoutImages) {
-        setImages(p.layoutImages.map(img => ({ preview: img, isExisting: true })));
+        setImages(p.layoutImages.map(img => ({ 
+          preview: getImageUrl(img), 
+          isExisting: true 
+        })));
       }
     } catch (error) {
       console.error("Error fetching project for edit:", error);
@@ -475,24 +479,28 @@ export function AddInventory() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {images.map((img, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-xl border-2 overflow-hidden group">
+                  <div key={idx} className="relative aspect-square rounded-xl border-2 overflow-hidden group shadow-sm hover:shadow-md transition-all">
                     <img
                       src={img.preview}
                       alt={`Layout ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button
                         variant="destructive"
                         size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => removeImage(idx)}
+                        className="h-10 w-10 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(idx);
+                        }}
+                        title="Remove Image"
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                     </div>
                     {img.isExisting && (
-                      <Badge className="absolute top-1 left-1 bg-primary text-white text-[8px] py-0 px-1">Current</Badge>
+                      <Badge className="absolute top-2 left-2 bg-red-600 hover:bg-red-700 text-white text-[10px] py-0.5 px-2 shadow-sm border-none">Current</Badge>
                     )}
                   </div>
                 ))}

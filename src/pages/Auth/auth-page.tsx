@@ -8,14 +8,36 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Eye, EyeOff, Image } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Eye, EyeOff, Image, Loader2 } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
   const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
+    try {
+      await login(email, password)
+      navigate("/dashboard")
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Invalid email or password")
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center bg-background p-6 md:p-10">
@@ -24,7 +46,10 @@ export function LoginForm({
           <Card className="overflow-hidden p-0 border-none shadow-lg">
             <CardContent className="grid p-0 md:grid-cols-2">
               <div className="p-6 md:p-12">
-                <form className="animate-in fade-in slide-in-from-left-4 duration-300">
+                <form
+                  onSubmit={handleSubmit}
+                  className="animate-in fade-in slide-in-from-left-4 duration-300"
+                >
                   <FieldGroup>
                     <div className="flex flex-col items-center gap-2 text-center mb-4">
                       <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
@@ -32,6 +57,13 @@ export function LoginForm({
                         Login to SP Promoters
                       </p>
                     </div>
+
+                    {error && (
+                      <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md mb-4 text-center">
+                        {error}
+                      </div>
+                    )}
+
                     <Field>
                       <FieldLabel htmlFor="email" className="font-semibold">Email</FieldLabel>
                       <Input
@@ -40,6 +72,8 @@ export function LoginForm({
                         placeholder="Enter Email"
                         required
                         className="h-11 rounded-md"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                       />
                     </Field>
                     <Field>
@@ -59,6 +93,8 @@ export function LoginForm({
                           placeholder="Enter Password"
                           required
                           className="h-11 rounded-md pr-10"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
                         />
                         <Button
                           type="button"
@@ -79,8 +115,19 @@ export function LoginForm({
                       </div>
                     </Field>
                     <Field>
-                      <Button type="submit" className="h-11 w-full bg-red-700 text-white hover:bg-red-800">
-                        Login
+                      <Button
+                        type="submit"
+                        className="h-11 w-full bg-red-700 text-white hover:bg-red-800"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Logging in...
+                          </>
+                        ) : (
+                          "Login"
+                        )}
                       </Button>
                     </Field>
                   </FieldGroup>

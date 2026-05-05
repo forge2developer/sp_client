@@ -3,17 +3,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { XIcon, CameraIcon, UserIcon } from "lucide-react"
+import { XIcon} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 
 export default function ProfilePage() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
-    firstName: "Firstname",
-    lastName: "Lastname",
-    email: "Email",
-    phone: "1234567890",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   })
 
   return (
@@ -54,25 +53,6 @@ export default function ProfilePage() {
 
           <TabsContent value="account" className="animate-in slide-in-from-bottom-4 duration-500 mt-0">
             <div className="flex flex-col items-center space-y-8">
-
-              {/* Centered Avatar */}
-              {/* <div className="flex flex-col items-center">
-                <div className="relative group cursor-pointer">
-                  <div className="absolute -inset-1.5 bg-primary/10 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition duration-700"></div>
-                  <Avatar className="h-32 w-32 border-4 border-background shadow-xl relative ring-1 ring-primary/20 transition-transform group-hover:scale-[1.02]">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      <UserIcon className="h-16 w-16" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm">
-                    <CameraIcon className="text-white h-8 w-8 mb-1" />
-                    <span className="text-white text-[10px] font-bold uppercase tracking-wider">Update</span>
-                  </div>
-                </div>
-                <p className="mt-4 text-xs font-bold text-muted-foreground uppercase tracking-wider">Profile Picture</p>
-              </div> */}
-
               {/* Centered Form */}
               <div className="w-full space-y-6">
                 <div className="grid grid-cols-1 gap-4">
@@ -92,6 +72,7 @@ export default function ProfilePage() {
                         value={field.value}
                         onChange={(e) => setFormData({ ...formData, [field.id]: e.target.value })}
                         className="h-10 px-4 bg-muted/20 border-border focus:ring-2 focus:ring-primary/10 transition-all rounded-lg text-sm"
+                        placeholder={`Enter ${field.label}`}
                       />
                     </div>
                   ))}
@@ -105,10 +86,10 @@ export default function ProfilePage() {
                     variant="ghost"
                     className="h-10 px-8 font-semibold text-muted-foreground hover:text-foreground"
                     onClick={() => setFormData({
-                      firstName: "Firstname",
-                      lastName: "Lastname",
-                      email: "Email",
-                      phone: "1234567890",
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      phone: "",
                     })}
                   >
                     Reset
@@ -122,9 +103,6 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center">
               <div className="w-full max-w-xl space-y-8">
                 <div className="flex flex-col items-center text-center space-y-4 mb-4">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <CameraIcon className="h-7 w-7 text-primary" />
-                  </div>
                   <div>
                     <h3 className="text-xl font-bold">Password Security</h3>
                     <p className="text-xs text-muted-foreground">Keep your account safe with a strong password.</p>
