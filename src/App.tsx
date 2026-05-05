@@ -24,6 +24,7 @@ import ThirdParty from "./pages/Tools/Third Party/thirdparty"
 import ToolsHub from "./pages/Tools/tools-hub"
 import ProfilePage from "./pages/Profile/profile-page"
 import { ReportPage } from "./pages/Reports/Report-page"
+import ProtectedRoute from "./components/ProtectedRoute"
 
 
 export function App() {
@@ -34,59 +35,59 @@ export function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/forgot-password" element={<FogotPasswordPage />} />
-
         </Route>
 
-        {/* Dashboard Routes (Inside Sidebar) */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-        </Route>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          {/* Dashboard Routes (Inside Sidebar) */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+          </Route>
 
+          {/* Inventory Routes */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/inventory_hub" element={<InventoryHub />} />
+            <Route path="/inventory_listing" element={<InventoryListing />} />
+            <Route path="/add_inventory" element={<AddInventory />} />
+            <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
+          </Route>
 
-        {/* Inventory Routes */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/inventory_hub" element={<InventoryHub />} />
-          <Route path="/inventory_listing" element={<InventoryListing />} />
-          <Route path="/add_inventory" element={<AddInventory />} />
-          <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
-        </Route>
-        {/*Tools Routes*/}
-        <Route element={<DashboardLayout />}>
-          <Route path="/tools_hub" element={<ToolsHub />} />
-          <Route path="/automation" element={<Automation />} />
-          <Route path="/automation/campaigns" element={<Campaigns />} />
-          <Route path="/automation/campaigns/builder" element={<CampaignBuilder />} />
-          <Route path="/automation/campaigns/builder/:id" element={<CampaignBuilder />} />
-          <Route path="/automation/leadcapture" element={<LeadCapture />} />
-          <Route path="/automation/leadcapture/form" element={<LeadCaptureForm />} />
-          <Route path="/third_party_integrations" element={<ThirdParty />} />
-        </Route>
+          {/*Tools Routes*/}
+          <Route element={<DashboardLayout />}>
+            <Route path="/tools_hub" element={<ToolsHub />} />
+            <Route path="/automation" element={<Automation />} />
+            <Route path="/automation/campaigns" element={<Campaigns />} />
+            <Route path="/automation/campaigns/builder" element={<CampaignBuilder />} />
+            <Route path="/automation/campaigns/builder/:id" element={<CampaignBuilder />} />
+            <Route path="/automation/leadcapture" element={<LeadCapture />} />
+            <Route path="/automation/leadcapture/form" element={<LeadCaptureForm />} />
+            <Route path="/third_party_integrations" element={<ThirdParty />} />
+          </Route>
 
-        {/* Lead Management Routes */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/lead_hub" element={<LeadHub />} />
-          <Route path="/lead-list" element={<LeadList />} />
-          <Route path="/add-lead" element={<AddLead />} />
-          <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
-        </Route>
-        {/*Setting Routes*/}
-        <Route element={<DashboardLayout />}>
-          <Route path="/general_settings" element={<GeneralSettings />} />
-          <Route path="/manage_users" element={<ManageUsers />} />
-          <Route path="/import_data" element={<ImportData />} />
-        </Route>
+          {/* Lead Management Routes */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/lead_hub" element={<LeadHub />} />
+            <Route path="/lead-list" element={<LeadList />} />
+            <Route path="/add-lead" element={<AddLead />} />
+            <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
+          </Route>
 
-        {/*Report  */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/report_page" element={<ReportPage />} />
-        </Route>
+          {/*Setting Routes*/}
+          <Route element={<DashboardLayout />}>
+            <Route path="/general_settings" element={<GeneralSettings />} />
+            <Route path="/manage_users" element={<ManageUsers />} />
+            <Route path="/import_data" element={<ImportData />} />
+          </Route>
 
-        {/* Lead Management Routes */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/lead-list" element={<LeadList />} />
-          <Route path="/add-lead" element={<AddLead />} />
-          <Route path="/lead-dashboard/:id" element={<LeadDashboard />} />
+          {/*Report  */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/report_page" element={<ReportPage />} />
+          </Route>
+
+          {/* Profile & Duplicate Routes */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
         </Route>
 
         {/* Redirects */}

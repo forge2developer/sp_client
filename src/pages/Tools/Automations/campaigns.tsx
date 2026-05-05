@@ -118,7 +118,7 @@ const getColumns = (
     header: "Status",
     cell: ({ row }) => (
       <Badge className={cn(
-        "px-3 py-1 rounded-lg text-[10px] font-black  tracking-widest border-none",
+        "px-3 py-1 rounded-lg text-[10px] font-bold",
         row.original.status === "Active" ? "bg-emerald-50 text-emerald-600" : "bg-zinc-100 text-zinc-400"
       )}>
         {row.original.status}
@@ -338,7 +338,7 @@ export default function Campaigns() {
             {table.getHeaderGroups().map(hg => (
               <TableRow key={hg.id}>
                 {hg.headers.map(h => (
-                  <TableHead key={h.id} className="text-[10px] font-black uppercase tracking-widest py-3">
+                  <TableHead key={h.id} className="text-xs font-bold py-3">
                     {flexRender(h.column.columnDef.header, h.getContext())}
                   </TableHead>
                 ))}

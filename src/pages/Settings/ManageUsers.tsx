@@ -206,6 +206,19 @@ export default function ManageUsers() {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
+  // ── Helper to hash password on client ──
+  const hashPassword = async (password: string) => {
+    if (!window.crypto || !window.crypto.subtle) {
+      console.warn("WebCrypto not available (needs HTTPS or localhost). Using fallback.");
+      return btoa(password); 
+    }
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  };
+
   // ── Create/Update user via REST ──
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -214,13 +227,19 @@ export default function ManageUsers() {
       const name = [formData.firstName, formData.lastName]
         .filter(Boolean)
         .join(" ")
+
+      let passwordToSend = formData.password;
+      if (!editingUser && passwordToSend) {
+        passwordToSend = await hashPassword(passwordToSend);
+      }
+
       const payload = {
         name,
         email: formData.email,
         phone: formData.phone,
         role: formData.role || "user",
         organization,
-        ...(editingUser ? {} : { password: formData.password }),
+        ...(editingUser ? {} : { password: passwordToSend }),
       }
 
       if (editingUser) {

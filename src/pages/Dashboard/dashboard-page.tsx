@@ -555,6 +555,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+
   )
 }
