@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { getImageUrl } from "@/lib/api";
 import {
   Plus,
   Trash2,
@@ -103,13 +104,16 @@ export function AddInventory() {
       setFetching(true);
       const response = await api.get(`/projects/${editId}?organization=${organization}`);
       const p: Project = response.data.data;
-      
+
       setName(p.name);
       setLocation(p.location);
       setPhases(p.phases || []);
-      
+
       if (p.layoutImages) {
-        setImages(p.layoutImages.map(img => ({ preview: img, isExisting: true })));
+        setImages(p.layoutImages.map(img => ({ 
+          preview: getImageUrl(img), 
+          isExisting: true 
+        })));
       }
     } catch (error) {
       console.error("Error fetching project for edit:", error);
@@ -206,7 +210,7 @@ export function AddInventory() {
   // ─── Plot Action Handlers ─────────────────────────────────────────────────
   const handlePlotClick = (phaseIndex: number, plotIndex: number) => {
     const plot = phases[phaseIndex].plots[plotIndex];
-    
+
     if (cornerSelectMode) {
       setPhases((prev) => {
         const updated = [...prev];
@@ -284,7 +288,7 @@ export function AddInventory() {
       const updated = [...prev];
       const phase = { ...updated[phaseIndex] };
       const remainingPlots = phase.plots.filter((_, i) => i !== plotIndex);
-      
+
       phase.plots = remainingPlots.map((plot, idx) => {
         const newNum = idx + 1;
         return {
@@ -413,12 +417,11 @@ export function AddInventory() {
 
       {/* Progress Steps */}
       <div className="flex items-center justify-between w-full px-16 relative mb-4">
-        <div className="absolute top-1/2 left-16 right-16 h-0.5 bg-muted -translate-y-1/2 z-0" />
+        <div className="absolute top-5 left-16 right-16 h-0.5 bg-muted -translate-y-1/2 z-0" />
         {(["basic", "phases", "review"] as Step[]).map((s, i) => (
           <div key={s} className={`z-10 flex flex-col items-center gap-2 ${step === s ? "text-primary" : "text-muted-foreground"}`}>
-            <div className={`h-10 w-10 rounded-full flex items-center justify-center border-2 bg-background transition-all ${
-              step === s ? "border-primary font-bold scale-110" : "border-muted"
-            }`}>
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center border-2 bg-background transition-all ${step === s ? "border-primary font-bold scale-110" : "border-muted"
+              }`}>
               {i + 1}
             </div>
             <span className="text-xs font-medium">
@@ -476,24 +479,28 @@ export function AddInventory() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                 {images.map((img, idx) => (
-                  <div key={idx} className="relative aspect-square rounded-xl border-2 overflow-hidden group">
+                  <div key={idx} className="relative aspect-square rounded-xl border-2 overflow-hidden group shadow-sm hover:shadow-md transition-all">
                     <img
                       src={img.preview}
                       alt={`Layout ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Button
                         variant="destructive"
                         size="icon"
-                        className="h-8 w-8 rounded-full"
-                        onClick={() => removeImage(idx)}
+                        className="h-10 w-10 rounded-full shadow-lg transform scale-90 group-hover:scale-100 transition-transform"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(idx);
+                        }}
+                        title="Remove Image"
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                     </div>
                     {img.isExisting && (
-                      <Badge className="absolute top-1 left-1 bg-primary text-white text-[8px] py-0 px-1">Current</Badge>
+                      <Badge className="absolute top-2 left-2 bg-red-600 hover:bg-red-700 text-white text-[10px] py-0.5 px-2 shadow-sm border-none">Current</Badge>
                     )}
                   </div>
                 ))}
@@ -583,13 +590,13 @@ export function AddInventory() {
                     {selectedPlots.size === 0 ? "Click plots below to select them for bulk update." : "Updating size and facing for selected plots."}
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="bulk-size" className="text-xs font-bold">SIZE (SQFT)</Label>
-                  <Input 
-                    id="bulk-size" 
-                    placeholder="e.g. 1200" 
-                    className="h-9 w-32 bg-background" 
+                  <Input
+                    id="bulk-size"
+                    placeholder="e.g. 1200"
+                    className="h-9 w-32 bg-background"
                     value={bulkSize}
                     onChange={(e) => setBulkSize(e.target.value)}
                   />
@@ -615,8 +622,8 @@ export function AddInventory() {
                   </Select>
                 </div>
 
-                <Button 
-                  onClick={applyBulkDetails} 
+                <Button
+                  onClick={applyBulkDetails}
                   disabled={selectedPlots.size === 0 || (!bulkSize && !bulkFacing)}
                   className="h-9 font-bold"
                 >
@@ -680,18 +687,16 @@ export function AddInventory() {
                         <ContextMenuTrigger asChild>
                           <button
                             onClick={() => handlePlotClick(phIdx, plIdx)}
-                            className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${
-                              cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
-                            } ${
-                              isSelected
+                            className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
+                              } ${isSelected
                                 ? "bg-primary text-primary-foreground border-primary scale-105 z-10 ring-2 ring-primary ring-offset-2"
                                 : plot.isCorner
-                                ? "bg-amber-500/15 text-amber-700 border-amber-500"
-                                : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"
-                            }`}
+                                  ? "bg-amber-500/15 text-amber-700 border-amber-500"
+                                  : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"
+                              }`}
                           >
                             <span className="text-sm font-black text-foreground/80">{plot.plotNumber}</span>
-                            
+
                             <div className="flex flex-col items-center justify-center gap-1">
                               {plot.size ? (
                                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-500/50 bg-red-50/50 text-red-600 ${isSelected ? "bg-white text-red-700" : ""}`}>
@@ -700,7 +705,7 @@ export function AddInventory() {
                               ) : (
                                 <span className="text-[8px] font-medium opacity-40 uppercase tracking-tighter italic">No Size</span>
                               )}
-                              
+
                               {plot.facing ? (
                                 <span className={`text-[9px] font-bold uppercase tracking-wide ${isSelected ? "text-primary-foreground/90" : "text-muted-foreground/80"}`}>
                                   {plot.facing}
@@ -709,7 +714,7 @@ export function AddInventory() {
                                 <span className="text-[8px] font-medium opacity-30 uppercase tracking-tighter italic">No Facing</span>
                               )}
                             </div>
-                            
+
                             {/* Delete Plot Button (Hover) */}
                             {!cornerSelectMode && !plotEditMode && (
                               <button
@@ -719,7 +724,7 @@ export function AddInventory() {
                                 }}
                                 className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20"
                               >
-                                <Trash2 className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3.5 w-3.5 text-white" />
                               </button>
                             )}
                           </button>

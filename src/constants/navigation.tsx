@@ -1,9 +1,10 @@
-import {  
-  BotIcon, 
-  BookOpenIcon, 
-  Settings2Icon, 
-  LayoutDashboard, 
-  Package 
+import {
+  Settings2Icon,
+  LayoutDashboard,
+  Package,
+  Wrench,
+  Target,
+  MessageSquareWarning
 } from "lucide-react"
 
 export const navigationData = {
@@ -13,6 +14,21 @@ export const navigationData = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
+    {
+      title: "Lead Directory",
+      url: "/lead_hub",
+      icon: <Target />,
+      items: [
+        {
+          title: "All Leads",
+          url: "/lead-list",
+        },
+        {
+          title: "Lead Form",
+          url: "/add-lead",
+        },
+      ],
+    },
     {
       title: "Inventory",
       url: "/inventory_hub",
@@ -30,56 +46,49 @@ export const navigationData = {
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: <BotIcon />,
+      title: "Tools",
+      url: "/tools_hub",
+      icon: <Wrench />,
       items: [
         {
-          title: "Genesis",
-          url: "#",
+          title: "Automation",
+          url: "/automation",
         },
         {
-          title: "Explorer",
-          url: "#",
+          title: "Third party Integrations",
+          url: "/third_party_integrations",
         },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+       ],
     },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: <BookOpenIcon />,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
+    // {
+    //   title: "Documentation",
+    //   url: "#",
+    //   icon: <BookOpenIcon />,
+    //   items: [
+    //     {
+    //       title: "Introduction",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Get Started",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Tutorials",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Changelog",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
     {
       title: "Settings",
       url: "/general_settings",
       icon: <Settings2Icon />,
+      noDropdown: true,
       items: [
-        {
-          title: "General Settings",
-          url: "/general_settings",
-        },
         {
           title: "Manage Users",
           url: "/manage_users",
@@ -88,18 +97,26 @@ export const navigationData = {
           title: "Import Data",
           url: "/import_data",
         },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
       ],
     },
+    {
+      title: "Reports",
+      url: "/report_page",
+      icon: <MessageSquareWarning />
+    }
   ],
-  navSecondary: [],
+  navSecondary: [
+    // {
+    //   title: "Support",
+    //   url: "#",
+    //   icon: <LayoutDashboard />, // Placeholder as icons were inline in sidebar
+    // },
+    // {
+    //   title: "Feedback",
+    //   url: "#",
+    //   icon: <LayoutDashboard />, // Placeholder
+    // },
+  ],
   projects: [
     {
       name: "Dashboard",
