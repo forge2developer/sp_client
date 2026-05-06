@@ -43,7 +43,6 @@ import {
   Calendar,
   Layers,
   RefreshCcw,
-  Loader2,
   X,
   Target,
   Megaphone,
@@ -64,7 +63,7 @@ interface Campaign {
   createdAt: string
 }
 
-const organization = "SP_PROMOTERS"
+
 
 // ─── Column Definitions ────────────────────────────────────────────────────────
 const getColumns = (
@@ -182,7 +181,7 @@ export default function Campaigns() {
   const fetchCampaigns = async () => {
     setLoading(true)
     try {
-      const res = await grpcApi.get(`/campaigns?organization=${organization}`)
+      const res = await grpcApi.get(`/campaigns`)
       setCampaigns(res.data.data || [])
     } catch (error) {
       setCampaigns([])
@@ -248,13 +247,6 @@ export default function Campaigns() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between px-1">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight">Campaign Manager</h1>
-          <p className="text-sm text-muted-foreground font-medium">Track lead sources and project routing hierarchy.</p>
-        </div>
-      </div>
 
       <div className="flex justify-between items-center gap-4 py-2 w-full flex-wrap">
         <div className="flex items-center gap-4 flex-1 pl-1">

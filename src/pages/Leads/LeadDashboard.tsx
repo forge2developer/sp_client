@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
     ChevronLeft, 
@@ -7,20 +7,14 @@ import {
     Building2, 
     Calendar, 
     Edit, 
-    Trash2,
-    CheckCircle2,
-    
     Clock,
     DollarSign,
-    MoreVertical,
     Send,
     MessageSquare,
-    ArrowRight,
     TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import api from "@/lib/api";
 

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
@@ -179,8 +178,9 @@ export default function DashboardPage() {
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
+                  mode="range"
                   selected={date}
-                  onSelect={(range) => range && setDate({ from: range.from, to: range.to })}
+                  onSelect={(range: any) => range && setDate({ from: range.from, to: range.to })}
                 />
               </PopoverContent>
             </Popover>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
                     ))}
 
                     {/* Hover Hitboxes */}
-                    {data.performance.map((v, i) => (
+                    {data.performance.map((_, i) => (
                       <rect
                         key={`hitbox-${i}`}
                         x={i * stepX - (stepX / 2)}
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                         className="cursor-pointer"
                         onMouseEnter={() => setHoveredIndex(i)}
                         onClick={() => setHoveredIndex(i)}
-                        onTouchStart={(e) => {
+                        onTouchStart={() => {
                           // Prevent scroll on touch if we're just tapping a point
                           setHoveredIndex(i);
                         }}

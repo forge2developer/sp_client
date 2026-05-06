@@ -25,6 +25,7 @@ import ToolsHub from "./pages/Tools/tools-hub"
 import ProfilePage from "./pages/Profile/profile-page"
 import { ReportPage } from "./pages/Reports/Report-page"
 import ProtectedRoute from "./components/ProtectedRoute"
+import CalendarView from "./pages/Calandar/calendar_view"
 
 
 export function App() {
@@ -83,7 +84,11 @@ export function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/report_page" element={<ReportPage />} />
           </Route>
-
+          {/*Calender  */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/calendar_view" element={<CalendarView />} />
+          </Route>
+    
           {/* Profile & Duplicate Routes */}
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<ProfilePage />} />

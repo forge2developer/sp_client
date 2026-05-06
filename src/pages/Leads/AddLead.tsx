@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
     ChevronLeft,
     Target,
-    Plus,
     Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,11 +15,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import api, { grpcApi } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
+import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const organization = "SP_PROMOTERS";
+
 
 const CONTACT_FIELD_GROUPS = [
     {
@@ -93,9 +92,9 @@ export function AddLead() {
             setConfigLoading(true);
             try {
                 const [configRes, campaignRes, projectRes] = await Promise.all([
-                    api.get("/grpc/lead-capture-configs?organization=SP_PROMOTERS"),
-                    api.get("/grpc/campaigns?organization=SP_PROMOTERS"),
-                    api.get("/grpc/projects?organization=SP_PROMOTERS")
+                    api.get("/grpc/lead-capture-configs"),
+                    api.get("/grpc/campaigns"),
+                    api.get("/grpc/projects")
                 ]);
                 setConfigs(configRes.data.data || []);
                 setCampaigns(campaignRes.data.data || []);
@@ -171,7 +170,7 @@ export function AddLead() {
                 name: name || "",
                 phone: phone || "",
                 email: email || "",
-                organization: "SP_PROMOTERS",
+
                 project_ids: submissionProjectIds,
                 config_id: selectedConfig.id,
                 source: source === "none" ? "Direct" : (source || selectedConfig.source || "Direct"),
@@ -303,17 +302,20 @@ export function AddLead() {
                                                                      <SelectValue placeholder="Select Interested Project" />
                                                                  </SelectTrigger>
                                                                  <SelectContent>
-                                                                     {projects.length > 0 ? (
-                                                                         projects.map((p) => (
-                                                                             <SelectItem key={p.id || p._id} value={p.name}>
-                                                                                 {p.name}
-                                                                             </SelectItem>
-                                                                         ))
-                                                                     ) : (
-                                                                         <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
-                                                                             No projects available
-                                                                         </div>
-                                                                     )}
+                                                                     <ScrollArea className="max-h-[280px]">
+                                                                         <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Interested Project</SelectItem>
+                                                                         {projects.length > 0 ? (
+                                                                             projects.map((p) => (
+                                                                                 <SelectItem key={p.id || p._id} value={p.name}>
+                                                                                     {p.name}
+                                                                                 </SelectItem>
+                                                                             ))
+                                                                         ) : (
+                                                                             <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
+                                                                                 No projects available
+                                                                             </div>
+                                                                         )}
+                                                                     </ScrollArea>
                                                                  </SelectContent>
                                                              </Select>
                                                          )
@@ -323,7 +325,11 @@ export function AddLead() {
                                                                  <button
                                                                      key={opt}
                                                                      type="button"
-                                                                     onClick={() => setDynamicFormData({ ...dynamicFormData, [fieldId]: opt })}
+                                                                     onClick={() => {
+                                                                         const currentVal = dynamicFormData[fieldId];
+                                                                         const newVal = currentVal === opt ? "" : opt;
+                                                                         setDynamicFormData({ ...dynamicFormData, [fieldId]: newVal });
+                                                                     }}
                                                                      className={cn(
                                                                          "h-10 px-6 rounded-md flex items-center justify-center text-[10px] font-black tracking-widest border transition-all duration-300",
                                                                          dynamicFormData[fieldId] === opt
@@ -380,18 +386,27 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70 px-1">Campaign Name <span className="text-red-600 ml-1">*</span></Label>
                                             <Select
                                                 value={dynamicFormData.campaign || ""}
-                                                onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, campaign: value })}
+                                                onValueChange={(value) => {
+                                                    setDynamicFormData({ 
+                                                        ...dynamicFormData, 
+                                                        campaign: value,
+                                                        source: "",
+                                                        sub_source: ""
+                                                    });
+                                                }}
                                             >
                                                 <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm">
                                                     <SelectValue placeholder="Select Campaign" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Campaign</SelectItem>
-                                                    {campaigns.map(c => (
-                                                        <SelectItem key={c.id} value={c.campaignName} className="text-xs font-bold">
-                                                            {c.campaignName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Campaign</SelectItem>
+                                                        {campaigns.map(c => (
+                                                            <SelectItem key={c.id} value={c.campaignName} className="text-xs font-bold">
+                                                                {c.campaignName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -399,19 +414,28 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70 px-1">Source <span className="text-red-600 ml-1">*</span></Label>
                                             <Select
                                                 value={dynamicFormData.source || ""}
-                                                onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, source: value })}
-                                                disabled={!dynamicFormData.campaign || dynamicFormData.campaign === "none"}
+                                                onValueChange={(value) => {
+                                                    setDynamicFormData({ 
+                                                        ...dynamicFormData, 
+                                                        source: value,
+                                                        sub_source: ""
+                                                    });
+                                                }}
+                                                disabled={!dynamicFormData.campaign || dynamicFormData.campaign === "none" || dynamicFormData.campaign === ""}
                                             >
-                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50">
+                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                                                     <SelectValue placeholder="Select Source" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Source</SelectItem>
-                                                    {availableSources.map(s => (
-                                                        <SelectItem key={s.uuid || s.sourceName} value={s.sourceName} className="text-xs font-bold">
-                                                            {s.sourceName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Source</SelectItem>
+                                                        {availableSources.map(s => (
+                                                            <SelectItem key={s.uuid || s.sourceName} value={s.sourceName} className="text-xs font-bold">
+                                                                {s.sourceName}
+                                                            </SelectItem>
+                                                            
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -420,18 +444,20 @@ export function AddLead() {
                                             <Select
                                                 value={dynamicFormData.sub_source || ""}
                                                 onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, sub_source: value })}
-                                                disabled={!dynamicFormData.source || dynamicFormData.source === "none"}
+                                                disabled={!dynamicFormData.source || dynamicFormData.source === "none" || dynamicFormData.source === ""}
                                             >
-                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50">
+                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                                                     <SelectValue placeholder="Select Sub Source" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Sub Source</SelectItem>
-                                                    {availableSubSources.map(ss => (
-                                                        <SelectItem key={ss.uuid || ss.subSourceName} value={ss.subSourceName} className="text-xs font-bold">
-                                                            {ss.subSourceName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Sub Source</SelectItem>
+                                                        {availableSubSources.map(ss => (
+                                                            <SelectItem key={ss.uuid || ss.subSourceName} value={ss.subSourceName} className="text-xs font-bold">
+                                                                {ss.subSourceName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>

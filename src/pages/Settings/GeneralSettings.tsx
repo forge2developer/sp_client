@@ -21,13 +21,7 @@ const settingsOptions = [
 
 export default function GeneralSettings() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">General Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your system configuration and data imports.
-        </p>
-      </div>
+    <div className="space-y-6 p-6">
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {settingsOptions.map((option) => (

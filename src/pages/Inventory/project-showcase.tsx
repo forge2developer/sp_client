@@ -2,14 +2,9 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
-  ChevronRight,
-  ChevronDown,
   Loader2,
   ArrowLeft,
   Info,
-  User,
-  Calendar,
-  Phone,
   LayoutGrid,
   CornerDownRight,
   Home,
@@ -19,7 +14,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import api, { type Project, type Phase, type Plot } from "@/lib/api";
 
@@ -32,7 +26,7 @@ export function ProjectShowcase() {
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
-  const organization = "SP_PROMOTERS";
+
 
   useEffect(() => {
     fetchProject();
@@ -41,7 +35,7 @@ export function ProjectShowcase() {
   const fetchProject = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/projects/${id}?organization=${organization}`);
+      const response = await api.get(`/projects/${id}`);
       const data = response.data.data;
       setProject(data);
 
