@@ -33,13 +33,13 @@ export function App() {
     <BrowserRouter>
       <Routes>
         {/* Auth Routes (Outside Sidebar) */}
-        {/* <Route element={<AuthLayout />}>
+        <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginForm />} />
           <Route path="/forgot-password" element={<FogotPasswordPage />} />
-        </Route> */}
+        </Route>
 
         {/* Protected Routes */}
-        {/* <Route element={<ProtectedRoute />}> */}
+        <Route element={<ProtectedRoute />}>
           {/* Dashboard Routes (Inside Sidebar) */}
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -93,7 +93,7 @@ export function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
-        {/* </Route> */}
+        </Route>
 
         {/* Redirects */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

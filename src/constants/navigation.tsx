@@ -34,7 +34,7 @@ export const navigationData = {
       title: "Inventory",
       url: "/inventory_hub",
       icon: <Package />,
-      isActive: true,
+      // isActive: true,
       items: [
         {
           title: "Inventory listing",
