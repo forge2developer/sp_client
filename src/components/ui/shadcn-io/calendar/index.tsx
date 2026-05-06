@@ -150,7 +150,7 @@ const Combobox = ({
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command
           className="w-full"
-          filter={(value, search) => {
+          filter={(value: string, search: string) => {
             const label = data.find((item) => item.value === value)?.label;
 
             return label?.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
@@ -164,7 +164,7 @@ const Combobox = ({
                 <CommandItem
                   className="capitalize"
                   key={item.value}
-                  onSelect={(currentValue) => {
+                  onSelect={(currentValue: string) => {
                     setValue(currentValue);
                     setOpen(false);
                   }}
