@@ -1,21 +1,32 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { 
-    ChevronLeft, 
-    Mail, 
-    Phone, 
-    Building2, 
-    Calendar, 
-    Edit, 
+import {
+    ChevronLeft,
+    Mail,
+    Phone,
+    Building2,
+    Calendar,
     Clock,
-    DollarSign,
     Send,
     MessageSquare,
-    TrendingUp
+    Target,
+    ListChecks,
+    StickyNote,
+    Shuffle,
+    ClipboardCheck,
+    LayoutGrid,
+    ClipboardList
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import api from "@/lib/api";
 
 interface Lead {
@@ -29,6 +40,28 @@ interface Lead {
     value: number;
     notes: string;
     assignedTo: string;
+    campaign?: string;
+    sub_source?: string;
+    createdAt: string;
+    interestedProjects?: string[];
+    campaignResponse?: {
+        status: string;
+        lastAction: string;
+        score: number;
+    };
+    requirements?: {
+        budget?: string;
+        location?: string;
+        type?: string;
+        urgency?: string;
+    };
+}
+
+interface LeadActivity {
+    _id: string;
+    type: string;
+    content: string;
+    user_name: string;
     createdAt: string;
 }
 
@@ -46,207 +79,378 @@ export function LeadDashboard() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [lead, setLead] = useState<Lead | null>(null);
+    const [activities, setActivities] = useState<LeadActivity[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchLead = async () => {
+        const fetchLeadAndActivities = async () => {
             try {
-                const response = await api.get(`/leads/${id}`);
-                setLead(response.data);
+                const [leadRes, activitiesRes] = await Promise.all([
+                    api.get(`/leads/${id}`),
+                    api.get(`/leads/${id}/activities`)
+                ]);
+                setLead(leadRes.data);
+                setActivities(activitiesRes.data);
                 setLoading(false);
             } catch (error) {
-                console.error("Error fetching lead:", error);
+                console.error("Error fetching lead data:", error);
                 setLoading(false);
             }
         };
-        if (id) fetchLead();
+        if (id) fetchLeadAndActivities();
     }, [id]);
 
     if (loading) return <div className="p-6 text-center">Loading Lead Details...</div>;
     if (!lead) return <div className="p-6 text-center text-destructive">Lead not found.</div>;
 
     return (
-        <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate("/lead-list")}>
-                        <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
-                        {lead.name.charAt(0)}
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl font-bold tracking-tight text-foreground">{lead.name}</h1>
-                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[lead.status] || "bg-gray-100 text-gray-700"}`}>
-                                {lead.status}
-                            </span>
-                        </div>
-                        <p className="text-muted-foreground flex items-center gap-2 mt-1">
-                            <Building2 className="h-4 w-4" /> {lead.company || "Individual"} • <Mail className="h-4 w-4 ml-1" /> {lead.email}
-                        </p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" className="gap-2">
-                        <Edit className="h-4 w-4" /> Edit Lead
-                    </Button>
-                    <Button variant="default" className="gap-2">
-                        <MessageSquare className="h-4 w-4" /> Log Activity
-                    </Button>
-                </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-primary/5 border-primary/10">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <DollarSign className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground font-medium">Deal Value</p>
-                                <p className="text-2xl font-bold text-foreground">${lead.value?.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-blue-500/10 rounded-lg">
-                                <TrendingUp className="h-5 w-5 text-blue-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground font-medium">Source</p>
-                                <p className="text-2xl font-bold text-foreground">{lead.source}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-orange-500/10 rounded-lg">
-                                <Calendar className="h-5 w-5 text-orange-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground font-medium">Created On</p>
-                                <p className="text-lg font-bold text-foreground">{new Date(lead.createdAt).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                <Clock className="h-5 w-5 text-emerald-500" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-muted-foreground font-medium">Last Contact</p>
-                                <p className="text-lg font-bold text-foreground">2 days ago</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Details Column */}
-                <div className="lg:col-span-2 space-y-6">
-                    <Card className="border-none shadow-sm">
-                        <CardHeader>
-                            <CardTitle>Lead Overview</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+        <TooltipProvider delayDuration={300}>
+            {/* <div className="p-8 max-w-[1600px] mx-auto bg-[#f8f9fa] min-h-screen"> */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start w-full">
+                {/* LEFT COLUMN: LeadSquared-inspired Profile Sidebar */}
+                <div className="lg:col-span-3 space-y-4 lg:sticky lg:top-8">
+                    {/* DARK PROFILE CARD */}
+                    <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                        <div className="p-6 relative">
+                            <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Contact Phone</p>
-                                    <p className="text-foreground font-medium flex items-center gap-2 mt-1">
-                                        <Phone className="h-4 w-4 text-muted-foreground" /> {lead.phone || "Not provided"}
-                                    </p>
+                                    <h2 className="text-2xl font-black text-gray-900 mb-0.5 tracking-tight">{lead.name}</h2>
+                                    <p className="text-sm text-red-600 italic font-semibold">Lead Profile</p>
                                 </div>
-                                <div>
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assigned Agent</p>
-                                    <div className="text-foreground font-medium flex items-center gap-2 mt-1">
-                                        <div className="h-6 w-6 rounded-full bg-primary text-[10px] text-white flex items-center justify-center font-bold">JD</div>
-                                        {lead.assignedTo}
-                                    </div>
-                                </div>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-500 border border-indigo-100/50">
+                                            <Shuffle className="h-4.5 w-4.5" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>Reassign Lead</p>
+                                    </TooltipContent>
+                                </Tooltip>
                             </div>
-                            <Separator />
-                            <div>
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Internal Notes</p>
-                                <p className="text-foreground mt-2 bg-muted/30 p-4 rounded-lg italic">
-                                    {lead.notes || "No additional notes provided for this lead."}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
 
-                    {/* Timeline / Activity Feed */}
-                    <Card className="border-none shadow-sm">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Activity History</CardTitle>
-                            <Button variant="ghost" size="sm" className="text-primary hover:text-primary hover:bg-primary/5">View All</Button>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="relative pl-6 border-l-2 border-muted space-y-8">
-                                <div className="relative">
-                                    <div className="absolute -left-[31px] top-0 h-4 w-4 rounded-full bg-primary border-4 border-background" />
-                                    <div>
-                                        <p className="text-sm font-semibold">Lead Created</p>
-                                        <p className="text-xs text-muted-foreground">Successfully added to the CRM via {lead.source}</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1">{new Date(lead.createdAt).toLocaleString()}</p>
+                            <div className="space-y-4 mt-6">
+                                <div className="flex items-center gap-4 group">
+                                    <div className="h-8 w-8 rounded-xl bg-red-50 flex items-center justify-center border border-red-100/50">
+                                        <Mail className="h-4 w-4 text-red-500" />
                                     </div>
+                                    <span className="text-sm text-gray-600 truncate font-semibold">{lead.email}</span>
                                 </div>
-                                <div className="relative">
-                                    <div className="absolute -left-[31px] top-0 h-4 w-4 rounded-full bg-blue-500 border-4 border-background" />
-                                    <div>
-                                        <p className="text-sm font-semibold">System Notification</p>
-                                        <p className="text-xs text-muted-foreground">Welcome email sent automatically.</p>
-                                        <p className="text-[10px] text-muted-foreground mt-1">{new Date(lead.createdAt).toLocaleString()}</p>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-8 w-8 rounded-xl bg-red-50 flex items-center justify-center border border-red-100/50">
+                                        <Phone className="h-4 w-4 text-red-500" />
                                     </div>
+                                    <span className="text-sm text-gray-600 font-semibold">{lead.phone || "Not provided"}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="h-8 w-8 rounded-xl bg-red-50 flex items-center justify-center border border-red-100/50">
+                                        <Building2 className="h-4 w-4 text-red-500" />
+                                    </div>
+                                    <span className="text-sm text-gray-600 font-semibold">{lead.company || "Individual"}</span>
                                 </div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+
+                        {/* STATS SECTION */}
+                        <div className="grid grid-cols-3 border-t border-gray-100 bg-gray-50/50">
+                            <div className="p-4 text-center border-r border-gray-100">
+                                <p className="text-sm font-black text-gray-900">{new Date(lead.createdAt).toLocaleDateString()}</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider mt-1 leading-none">Created</p>
+                            </div>
+                            <div className="p-4 text-center border-r border-gray-100">
+                                <p className="text-sm font-black text-gray-900">{activities.length > 0 ? new Date(activities[0].createdAt).toLocaleDateString() : "None"}</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider mt-1 leading-none">Active</p>
+                            </div>
+                            <div className="p-4 text-center">
+                                <p className="text-sm font-black text-[#dc2626]">${lead.value?.toLocaleString() || "0"}</p>
+                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider mt-1 leading-none">Value</p>
+                            </div>
+                        </div>
+                        <div className="p-4 grid grid-cols-4 gap-2 border-t border-gray-100 bg-gray-50/30">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-500 border border-orange-100/50">
+                                        <StickyNote className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Add Note</p></TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-500 border border-emerald-100/50">
+                                        <Phone className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Make Call</p></TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-500 border border-purple-100/50">
+                                        <MessageSquare className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Send SMS</p></TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-500 border border-teal-100/50 relative">
+                                        <ClipboardCheck className="h-4 w-4" />
+                                        <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-emerald-500 rounded-full text-[7px] text-white flex items-center justify-center font-bold border-2 border-white">1</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>View Tasks</p></TooltipContent>
+                            </Tooltip>
+                        </div>
+                    </div>
+
+                    {/* PROPERTIES CARD */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">Leads Properties</h3>
+                            <ChevronLeft className="h-4 w-4 text-slate-400 rotate-270" />
+                        </div>
+                        <div className="divide-y divide-gray-50">
+                            <div className="grid grid-cols-2 px-5 py-3 items-center hover:bg-gray-50/50 transition-colors">
+                                <span className="text-sm font-bold text-slate-400">Owner</span>
+                                <span className="text-sm font-black text-slate-700 text-right">{lead.assignedTo || "Unassigned"}</span>
+                            </div>
+                            <div className="grid grid-cols-2 px-5 py-3 items-center bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                                <span className="text-sm font-bold text-slate-400">Lead Source</span>
+                                <span className="text-sm font-black text-slate-700 text-right">{lead.source || "Direct"}</span>
+                            </div>
+                            <div className="grid grid-cols-2 px-5 py-3 items-center hover:bg-gray-50/50 transition-colors">
+                                <span className="text-sm font-bold text-slate-400">Received On</span>
+                                <span className="text-sm font-black text-slate-700 text-right">{new Date(lead.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div className="grid grid-cols-2 px-5 py-3 items-center bg-gray-50/30 hover:bg-gray-50/50 transition-colors">
+                                <span className="text-sm font-bold text-slate-400">Status</span>
+                                <Badge className={`ml-auto text-[10px] font-black uppercase px-3 py-0.5 h-5 border-0 ${statusColors[lead.status] || "bg-gray-100 text-gray-700"}`}>
+                                    {lead.status}
+                                </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 px-5 py-3 items-center hover:bg-gray-50/50 transition-colors">
+                                <span className="text-sm font-bold text-slate-400">Value</span>
+                                <span className="text-sm font-black text-slate-700 text-right">${lead.value?.toLocaleString() || "0"}</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Sidebar Column */}
-                <div className="space-y-6">
-                    <Card className="border-none shadow-sm bg-primary text-primary-foreground">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Next Steps</CardTitle>
-                            <CardDescription className="text-primary-foreground/70">Recommended actions for this lead.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <Button variant="secondary" className="w-full justify-start gap-3">
-                                <Phone className="h-4 w-4" /> Schedule Discovery Call
-                            </Button>
-                            <Button variant="secondary" className="w-full justify-start gap-3">
-                                <Send className="h-4 w-4" /> Send Proposal
-                            </Button>
-                        </CardContent>
-                    </Card>
+                {/* RIGHT COLUMN: Activity & Content area */}
+                <div className="lg:col-span-9 space-y-3">
+                    <Tabs defaultValue="timeline" className="w-full">
+                        <TabsList className="bg-white p-1.5 rounded-xl border border-gray-100 w-full justify-start h-auto gap-2 p-5 shadow-sm">
+                            <TabsTrigger value="timeline" className="rounded-lg px-8 py-4 text-sm font-black data-[state=active]:bg-[#fef2f2] data-[state=active]:text-[#dc2626] transition-all">
+                                <Clock className="h-4.5 w-4.5 mr-2" /> Timeline
+                            </TabsTrigger>
+                            <TabsTrigger value="projects" className="rounded-lg px-8 py-4 text-sm font-black data-[state=active]:bg-[#fef2f2] data-[state=active]:text-[#dc2626] transition-all">
+                                <LayoutGrid className="h-4.5 w-4.5 mr-2" /> Projects
+                            </TabsTrigger>
+                            <TabsTrigger value="requirements" className="rounded-lg px-8 py-4 text-sm font-black data-[state=active]:bg-[#fef2f2] data-[state=active]:text-[#dc2626] transition-all">
+                                <ClipboardList className="h-4.5 w-4.5 mr-2" /> Requirements
+                            </TabsTrigger>
+                            <TabsTrigger value="campaign" className="rounded-lg px-8 py-4 text-sm font-black data-[state=active]:bg-[#fef2f2] data-[state=active]:text-[#dc2626] transition-all">
+                                <Target className="h-4.5 w-4.5 mr-2" /> Campaign
+                            </TabsTrigger>
+                        </TabsList>
 
-                    <Card className="border-none shadow-sm">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Lead Score</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center justify-between">
-                                <div className="text-3xl font-bold">84/100</div>
-                                <div className="h-12 w-12 rounded-full border-4 border-primary border-t-muted animate-spin-slow" />
+                        <TabsContent value="timeline" className="mt-0 outline-none">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                <div className="p-6 border-b border-gray-100 bg-white">
+                                    <div className="flex justify-between items-center">
+                                        <h3 className="text-lg font-black text-gray-900">Activity Timeline</h3>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button size="sm" className="bg-[#dc2626] hover:bg-[#b91c1c] text-white rounded-lg px-4 font-bold text-xs">
+                                                    <MessageSquare className="h-3.5 w-3.5 mr-2" /> Log Activity
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="left">
+                                                <p>Record new activity</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </div>
+                                <div className="p-8 space-y-8 relative">
+                                    <div className="absolute left-[51px] top-8 bottom-8 w-px bg-gray-100"></div>
+                                    {activities.length > 0 ? (
+                                        activities.map((activity) => (
+                                            <div key={activity._id} className="relative flex gap-6 group">
+                                                <div className="z-10 h-10 w-10 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
+                                                    {activity.type === 'System' ? (
+                                                        <Clock className="h-4 w-4 text-blue-500" />
+                                                    ) : activity.type === 'Call' ? (
+                                                        <Phone className="h-4 w-4 text-emerald-500" />
+                                                    ) : (
+                                                        <Send className="h-4 w-4 text-[#dc2626]" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col pt-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-sm font-black text-gray-900">{activity.type}</span>
+                                                        <span className="text-[10px] font-bold text-gray-400">•</span>
+                                                        <span className="text-[10px] font-bold text-gray-400">{new Date(activity.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} at {new Date(activity.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 font-medium leading-relaxed">{activity.content}</p>
+                                                    <div className="flex items-center gap-1.5 mt-2">
+                                                        <div className="h-4 w-4 rounded-full bg-gray-200 text-[8px] flex items-center justify-center font-bold text-gray-500 uppercase">
+                                                            {activity.user_name?.charAt(0) || "S"}
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Logged by {activity.user_name}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-center py-12 flex flex-col items-center gap-4">
+                                            <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center">
+                                                <Calendar className="h-8 w-8 text-gray-200" />
+                                            </div>
+                                            <p className="text-sm font-bold text-gray-400">No activities recorded yet.</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">Highly likely to convert based on current data.</p>
-                        </CardContent>
-                    </Card>
+                        </TabsContent>
+
+                        <TabsContent value="projects" className="mt-0 outline-none">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                <h3 className="text-lg font-black text-gray-900 mb-6">Interested Projects</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {lead.interestedProjects?.length ? lead.interestedProjects.map((project, idx) => (
+                                        <div key={idx} className="p-5 rounded-xl border border-gray-100 bg-gray-50 flex flex-col gap-4 hover:border-[#dc2626]/30 transition-colors">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                                                    <Building2 className="h-5 w-5 text-[#dc2626]" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-gray-900">{project}</p>
+                                                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Property Listing</p>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2 mt-2">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Click Booking</Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Start Booking</p></TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Site Visit</Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Schedule Visit</p></TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        </div>
+                                    )) : (
+                                        <>
+                                            <div className="p-5 rounded-xl border border-gray-100 bg-gray-50 flex flex-col gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                                                        <Building2 className="h-5 w-5 text-[#dc2626]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900">The Grand Residency</p>
+                                                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Premium Apartment</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Click Booking</Button>
+                                                    <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Schedule Visit</Button>
+                                                </div>
+                                            </div>
+                                            <div className="p-5 rounded-xl border border-gray-100 bg-gray-50 flex flex-col gap-4">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="h-10 w-10 rounded-lg bg-white shadow-sm flex items-center justify-center">
+                                                        <Building2 className="h-5 w-5 text-[#dc2626]" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-900">Green Valley Villas</p>
+                                                        <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Luxury Villa</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 mt-2">
+                                                    <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Click Booking</Button>
+                                                    <Button size="sm" variant="outline" className="text-[10px] h-8 border-red-200 text-red-600 hover:bg-red-50 font-bold">Schedule Visit</Button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="requirements" className="mt-0 outline-none">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                <h3 className="text-lg font-black text-gray-900 mb-6">Specific Requirements</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Preferred Location</span>
+                                            <p className="text-sm font-bold text-gray-700">{lead.requirements?.location || "Downtown / Central Area"}</p>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Budget Range</span>
+                                            <p className="text-sm font-bold text-[#dc2626]">{lead.requirements?.budget || "$500,000 - $750,000"}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Property Type</span>
+                                            <p className="text-sm font-bold text-gray-700">{lead.requirements?.type || "3 BHK Apartment"}</p>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">Purchase Urgency</span>
+                                            <Badge variant="outline" className="w-fit bg-orange-50 text-orange-600 border-orange-100 font-bold uppercase text-[9px] tracking-widest">
+                                                {lead.requirements?.urgency || "Immediate (1-3 months)"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Separator className="my-6" />
+                                <div className="flex items-center gap-2 text-xs text-gray-500 font-medium bg-gray-50 p-4 rounded-xl">
+                                    <ListChecks className="h-4 w-4 text-[#dc2626]" />
+                                    Lead is looking for a south-facing balcony and high-floor unit.
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="campaign" className="mt-0 outline-none">
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                <h3 className="text-lg font-black text-gray-900 mb-6">Campaign Performance</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="p-4 rounded-xl bg-[#fef2f2] border border-[#fee2e2] text-center">
+                                        <span className="text-[10px] font-black text-[#dc2626] uppercase tracking-wider block mb-1">Response Score</span>
+                                        <span className="text-3xl font-black text-[#dc2626]">{lead.campaignResponse?.score || "92"}%</span>
+                                    </div>
+                                    <div className="md:col-span-2 space-y-4 pt-1">
+                                        <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                                            <span className="text-xs font-bold text-gray-500">Active Campaign</span>
+                                            <span className="text-xs font-black text-gray-900">{lead.campaign || "Spring Luxury Launch"}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center pb-2 border-b border-gray-50">
+                                            <span className="text-xs font-bold text-gray-500">Last Interaction</span>
+                                            <span className="text-xs font-black text-gray-900">{lead.campaignResponse?.lastAction || "Form Submitted"}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-xs font-bold text-gray-500">Status</span>
+                                            <Badge className="bg-emerald-500 text-white border-0 font-bold uppercase text-[9px] tracking-widest">
+                                                {lead.campaignResponse?.status || "Engaged"}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Tabs>
                 </div>
-            </div>
-        </div>
+
+            //     </div>
+            {/* </div> */}
+        </TooltipProvider>
     );
 }

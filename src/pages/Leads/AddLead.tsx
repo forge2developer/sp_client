@@ -232,8 +232,20 @@ export function AddLead() {
                                             />
                                         </div>
 
+                                        <div className="space-y-3">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-foreground">Email Address <span className="text-red-600 ml-1">*</span></Label>
+                                            <Input
+                                                required
+                                                type="email"
+                                                placeholder="Enter email address"
+                                                className="h-12 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6"
+                                                value={dynamicFormData.email || ""}
+                                                onChange={(e) => setDynamicFormData({ ...dynamicFormData, email: e.target.value })}
+                                            />
+                                        </div>
+
                                         {/* Standard Selected Contact Fields */}
-                                        {selectedConfig.selected_contact_fields?.map((fieldId: string) => {
+                                        {selectedConfig.selected_contact_fields?.filter((id: string) => id !== 'email').map((fieldId: string) => {
                                             const field = CONTACT_FIELD_GROUPS.flatMap(g => g.fields).find(f => f.id === fieldId);
                                             const label = field ? field.label : fieldId.replace(/_/g, ' ');
                                             return (
