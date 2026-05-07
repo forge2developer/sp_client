@@ -181,7 +181,7 @@ export function AddInventory() {
 
   const addBulkPlots = (phaseIndex: number) => {
     const count = parseInt(plotCountInputs[phaseIndex] || "0");
-    if (count <= 0 || count > 500) return;
+    if (count <= 0 || count > 600) return;
 
     setPhases((prev) => {
       const updated = [...prev];
@@ -711,7 +711,7 @@ export function AddInventory() {
                     <Input
                       type="number"
                       min={1}
-                      max={500}
+                      max={600}
                       placeholder="e.g. 50"
                       className="w-32 h-10 font-bold"
                       value={plotCountInputs[phIdx] || ""}
