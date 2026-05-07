@@ -406,24 +406,9 @@ export function AddInventory() {
         </DialogContent>
       </Dialog>
 
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/inventory_listing")}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {isEditMode ? "Edit Project" : "Add New Project"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {isEditMode ? `Update details for ${name}` : "Set up your plotted development project."}
-          </p>
-        </div>
-      </div>
-
       {/* Progress Steps */}
-      <div className="flex items-center justify-between w-full px-16 relative mb-4">
-        <div className="absolute top-5 left-16 right-16 h-0.5 bg-muted -translate-y-1/2 z-0" />
+      <div className="flex items-center justify-between w-full px-16 py-2 relative mb-4">
+        <div className="absolute top-5 left-16 right-16 mt-2 h-0.5 bg-muted -translate-y-1/2 z-0" />
         {(["basic", "phases", "review"] as Step[]).map((s, i) => (
           <div key={s} className={`z-10 flex flex-col items-center gap-2 ${step === s ? "text-primary" : "text-muted-foreground"}`}>
             <div className={`h-10 w-10 rounded-full flex items-center justify-center border-2 bg-background transition-all ${step === s ? "border-primary font-bold scale-110" : "border-muted"
@@ -556,7 +541,7 @@ export function AddInventory() {
             <div className="flex items-center gap-2">
               <Button
                 variant={plotEditMode ? "default" : "outline"}
-                size="sm"
+                size="lg"
                 onClick={() => {
                   setPlotEditMode(!plotEditMode);
                   setCornerSelectMode(false);
@@ -569,7 +554,7 @@ export function AddInventory() {
               </Button>
               <Button
                 variant={cornerSelectMode ? "default" : "outline"}
-                size="sm"
+                size="lg"
                 onClick={() => {
                   setCornerSelectMode(!cornerSelectMode);
                   setPlotEditMode(false);
@@ -580,7 +565,7 @@ export function AddInventory() {
                 <MousePointer2 className="h-4 w-4 mr-2" />
                 {cornerSelectMode ? "Done Selecting" : "Select Corner Plots"}
               </Button>
-              <Button variant="outline" size="sm" onClick={addPhase}>
+              <Button variant="outline" size="lg" onClick={addPhase}>
                 <Plus className="h-4 w-4 mr-2" /> Add Phase
               </Button>
             </div>
