@@ -225,10 +225,15 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground">Phone Number <span className="text-red-600 ml-1">*</span></Label>
                                             <Input
                                                 required
+                                                type="tel"
+                                                pattern="[0-9]*"
                                                 placeholder="Enter phone number"
                                                 className="h-12 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6"
                                                 value={dynamicFormData.phone || ""}
-                                                onChange={(e) => setDynamicFormData({ ...dynamicFormData, phone: e.target.value })}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, ""); // Remove non-numeric
+                                                    setDynamicFormData({ ...dynamicFormData, phone: val });
+                                                }}
                                             />
                                         </div>
 

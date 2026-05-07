@@ -83,11 +83,13 @@ export function AddInventory() {
   // Bulk Edit Values
   const [bulkSize, setBulkSize] = useState("");
   const [bulkFacing, setBulkFacing] = useState("");
+  const [bulkPrice, setBulkPrice] = useState("");
 
   // Single Edit Modal
   const [editingPlot, setEditingPlot] = useState<{ phIdx: number; plIdx: number; plot: Plot } | null>(null);
   const [singleSize, setSingleSize] = useState("");
   const [singleFacing, setSingleFacing] = useState("");
+  const [singlePrice, setSinglePrice] = useState("");
 
   // ─── Fetch for Edit Mode ──────────────────────────────────────────────────
   useEffect(() => {
@@ -236,6 +238,7 @@ export function AddInventory() {
     setEditingPlot({ phIdx, plIdx, plot });
     setSingleSize(plot.size ? plot.size.toString() : "");
     setSingleFacing(plot.facing || "");
+    setSinglePrice(plot.price ? plot.price.toString() : "");
   };
 
   const applySingleDetails = () => {
@@ -249,7 +252,8 @@ export function AddInventory() {
       plots[plIdx] = { 
         ...plots[plIdx], 
         size: singleSize ? Number(singleSize) : undefined, 
-        facing: singleFacing 
+        facing: singleFacing,
+        price: singlePrice ? Number(singlePrice) : undefined
       };
       ph.plots = plots;
       updated[phIdx] = ph;
@@ -271,6 +275,7 @@ export function AddInventory() {
               ...plot,
               size: bulkSize ? Number(bulkSize) : plot.size,
               facing: bulkFacing !== "none" ? bulkFacing : plot.facing,
+              price: bulkPrice ? Number(bulkPrice) : plot.price,
             };
           }
           return plot;
@@ -281,6 +286,7 @@ export function AddInventory() {
     setSelectedPlots(new Set());
     setBulkSize("");
     setBulkFacing("");
+    setBulkPrice("");
     setPlotEditMode(false);
   };
 
@@ -399,6 +405,18 @@ export function AddInventory() {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="price" className="text-right">PRICE</Label>
+              <Input
+                id="price"
+                type="text"
+                inputMode="numeric"
+                value={singlePrice}
+                onChange={(e) => setSinglePrice(e.target.value.replace(/[^0-9]/g, ""))}
+                className="col-span-3"
+                placeholder="e.g. 2500000"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button onClick={applySingleDetails} className="w-full font-bold">Save Changes</Button>
@@ -407,7 +425,7 @@ export function AddInventory() {
       </Dialog>
 
       {/* Progress Steps */}
-      <div className="flex items-center justify-between w-full px-16 py-2 relative mb-4">
+      <div className="flex items-center justify-between w-[70%] mx-auto px-16 py-2 relative mb-4">
         <div className="absolute top-5 left-16 right-16 mt-2 h-0.5 bg-muted -translate-y-1/2 z-0" />
         {(["basic", "phases", "review"] as Step[]).map((s, i) => (
           <div key={s} className={`z-10 flex flex-col items-center gap-2 ${step === s ? "text-primary" : "text-muted-foreground"}`}>
@@ -519,6 +537,7 @@ export function AddInventory() {
           </CardContent>
           <CardFooter className="flex justify-end">
             <Button
+            size="lg"
               onClick={() => setStep("phases")}
               disabled={!name.trim() || !location.trim()}
             >
@@ -618,9 +637,22 @@ export function AddInventory() {
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="bulk-price" className="text-xs font-bold">PRICE</Label>
+                  <Input
+                    id="bulk-price"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="e.g. 2500000"
+                    className="h-9 w-32 bg-background"
+                    value={bulkPrice}
+                    onChange={(e) => setBulkPrice(e.target.value.replace(/[^0-9]/g, ""))}
+                  />
+                </div>
+
                 <Button
                   onClick={applyBulkDetails}
-                  disabled={selectedPlots.size === 0 || (!bulkSize && !bulkFacing)}
+                  disabled={selectedPlots.size === 0 || (!bulkSize && !bulkFacing && !bulkPrice)}
                   className="h-9 font-bold"
                 >
                   Apply to {selectedPlots.size} Plots
@@ -636,132 +668,155 @@ export function AddInventory() {
             </div>
           )}
 
-          {phases.map((phase, phIdx) => (
-            <Card key={phIdx} className="border-l-4 border-l-primary overflow-hidden">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                      {phase.phaseId}
+          {phases.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 border-2 border-dashed border-primary/20 rounded-3xl bg-slate-50/50 dark:bg-zinc-900/50 gap-6 animate-in fade-in zoom-in duration-500">
+              <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                <Layers className="h-10 w-10" />
+              </div>
+              <div className="text-center space-y-2">
+                <h3 className="text-2xl font-black tracking-tight">No Phases Created Yet</h3>
+                <p className="text-muted-foreground max-w-sm mx-auto text-sm font-medium">
+                  Inventory is organized by phases. Start by adding your first project phase to begin generating plots.
+                </p>
+              </div>
+              <Button size="lg" onClick={addPhase} className="font-black px-10 h-14 rounded-xl  hover:scale-105 transition-all">
+                <Plus className="h-5 w-5 mr-2" /> Add First Phase
+              </Button>
+            </div>
+          ) : (
+            phases.map((phase, phIdx) => (
+              <Card key={phIdx} className="border-l-4 border-l-primary overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-sm">
+                        {phase.phaseId}
+                      </div>
+                      <div className="flex-1 max-w-xs">
+                        <Input
+                          value={phase.phaseName}
+                          onChange={(e) => updatePhaseName(phIdx, e.target.value)}
+                          className="font-black text-lg h-10 border-transparent hover:border-input focus:border-input transition-all"
+                        />
+                      </div>
                     </div>
-                    <div className="flex-1 max-w-xs">
-                      <Input
-                        value={phase.phaseName}
-                        onChange={(e) => updatePhaseName(phIdx, e.target.value)}
-                        className="font-semibold text-lg h-9 border-transparent hover:border-input focus:border-input"
-                      />
-                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 rounded-full" onClick={() => removePhase(phIdx)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => removePhase(phIdx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-3 bg-muted/30 p-3 rounded-lg">
-                  <Label className="text-sm font-medium whitespace-nowrap">Number of plots:</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={500}
-                    placeholder="e.g. 50"
-                    className="w-32"
-                    value={plotCountInputs[phIdx] || ""}
-                    onChange={(e) => setPlotCountInputs((prev) => ({ ...prev, [phIdx]: e.target.value }))}
-                    onKeyDown={(e) => e.key === "Enter" && addBulkPlots(phIdx)}
-                  />
-                  <Button size="sm" onClick={() => addBulkPlots(phIdx)}>
-                    <Plus className="h-4 w-4 mr-1" /> Generate Plots
-                  </Button>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3 bg-muted/30 p-4 rounded-xl border border-muted/50">
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Number of plots:</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={500}
+                      placeholder="e.g. 50"
+                      className="w-32 h-10 font-bold"
+                      value={plotCountInputs[phIdx] || ""}
+                      onChange={(e) => setPlotCountInputs((prev) => ({ ...prev, [phIdx]: e.target.value }))}
+                      onKeyDown={(e) => e.key === "Enter" && addBulkPlots(phIdx)}
+                    />
+                    <Button size="sm" onClick={() => addBulkPlots(phIdx)} className="h-10 font-black px-6 rounded-lg">
+                      <Plus className="h-4 w-4 mr-1" /> GENERATE PLOTS
+                    </Button>
+                  </div>
+  
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+                    {phase.plots.map((plot, plIdx) => {
+                      const isSelected = selectedPlots.has(plot.plotId);
+                      return (
+                        <ContextMenu key={plot.plotId}>
+                          <ContextMenuTrigger asChild>
+                            <button
+                              onClick={() => handlePlotClick(phIdx, plIdx)}
+                              className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
+                                } ${isSelected
+                                  ? "bg-red-50 text-red-700 border-red-500 scale-105 z-10 ring-2 ring-red-200 ring-offset-2"
+                                  : plot.isCorner
+                                    ? "bg-amber-500/15 text-amber-700 border-amber-500"
+                                    : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"
+                                }`}
+                            >
+                              <span className="text-sm font-black text-foreground/80">{plot.plotNumber}</span>
+  
+                              <div className="flex flex-col items-center justify-center gap-1">
+                                {plot.size ? (
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-500/50 bg-red-50/50 text-red-600 ${isSelected ? "bg-white text-red-700" : ""}`}>
+                                    {plot.size} sqft
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] font-medium opacity-40 uppercase tracking-tighter italic">No Size</span>
+                                )}
+  
+                                {plot.facing ? (
+                                  <span className={`text-[9px] font-bold uppercase tracking-wide ${isSelected ? "text-primary-foreground/90" : "text-muted-foreground/80"}`}>
+                                    {plot.facing}
+                                  </span>
+                                ) : (
+                                  <span className="text-[8px] font-medium opacity-30 uppercase tracking-tighter italic">No Facing</span>
+                                )}
 
-                <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
-                  {phase.plots.map((plot, plIdx) => {
-                    const isSelected = selectedPlots.has(plot.plotId);
-                    return (
-                      <ContextMenu key={plot.plotId}>
-                        <ContextMenuTrigger asChild>
-                          <button
-                            onClick={() => handlePlotClick(phIdx, plIdx)}
-                            className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center text-xs font-bold transition-all relative group ${cornerSelectMode || plotEditMode ? "cursor-pointer hover:scale-105" : "cursor-default"
-                              } ${isSelected
-                                ? "bg-red-50 text-red-700 border-red-500 scale-105 z-10 ring-2 ring-red-200 ring-offset-2"
-                                : plot.isCorner
-                                  ? "bg-amber-500/15 text-amber-700 border-amber-500"
-                                  : "bg-white text-green-700 border-green-500/20 hover:border-green-500/50"
-                              }`}
-                          >
-                            <span className="text-sm font-black text-foreground/80">{plot.plotNumber}</span>
-
-                            <div className="flex flex-col items-center justify-center gap-1">
-                              {plot.size ? (
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-red-500/50 bg-red-50/50 text-red-600 ${isSelected ? "bg-white text-red-700" : ""}`}>
-                                  {plot.size} sqft
-                                </span>
-                              ) : (
-                                <span className="text-[8px] font-medium opacity-40 uppercase tracking-tighter italic">No Size</span>
+                                {plot.price ? (
+                                  <span className="text-[9px] font-black text-red-600 mt-0.5">
+                                    ₹{(plot.price / 100000).toFixed(1)}L
+                                  </span>
+                                ) : null}
+                              </div>
+  
+                              {/* Delete Plot Button (Hover) */}
+                              {!cornerSelectMode && !plotEditMode && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removePlot(phIdx, plIdx);
+                                  }}
+                                  className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20 shadow-lg"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-white" />
+                                </button>
                               )}
-
-                              {plot.facing ? (
-                                <span className={`text-[9px] font-bold uppercase tracking-wide ${isSelected ? "text-primary-foreground/90" : "text-muted-foreground/80"}`}>
-                                  {plot.facing}
-                                </span>
-                              ) : (
-                                <span className="text-[8px] font-medium opacity-30 uppercase tracking-tighter italic">No Facing</span>
-                              )}
-                            </div>
-
-                            {/* Delete Plot Button (Hover) */}
-                            {!cornerSelectMode && !plotEditMode && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removePlot(phIdx, plIdx);
-                                }}
-                                className="absolute -top-2 -right-2 h-6 w-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20"
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-white" />
-                              </button>
-                            )}
-                          </button>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent className="w-48">
-                          <ContextMenuLabel className="text-xs uppercase tracking-widest text-muted-foreground">Plot {plot.plotNumber}</ContextMenuLabel>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem onClick={() => openSingleEdit(phIdx, plIdx, plot)}>
-                            <Settings2 className="mr-2 h-4 w-4" /> Edit Details
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => {
-                            setPhases((prev) => {
-                              const updated = [...prev];
-                              const ph = { ...updated[phIdx] };
-                              const plots = [...ph.plots];
-                              plots[plIdx] = { ...plots[plIdx], isCorner: !plots[plIdx].isCorner };
-                              ph.plots = plots;
-                              updated[phIdx] = ph;
-                              return updated;
-                            });
-                          }}>
-                            <CornerDownRight className="mr-2 h-4 w-4" /> Toggle Corner
-                          </ContextMenuItem>
-                          <ContextMenuSeparator />
-                          <ContextMenuItem className="text-destructive" onClick={() => removePlot(phIdx, plIdx)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete Plot
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                            </button>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="w-48">
+                            <ContextMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Plot {plot.plotNumber}</ContextMenuLabel>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem onClick={() => openSingleEdit(phIdx, plIdx, plot)} className="font-bold">
+                              <Settings2 className="mr-2 h-4 w-4" /> Edit Details
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={() => {
+                              setPhases((prev) => {
+                                const updated = [...prev];
+                                const ph = { ...updated[phIdx] };
+                                const plots = [...ph.plots];
+                                plots[plIdx] = { ...plots[plIdx], isCorner: !plots[plIdx].isCorner };
+                                ph.plots = plots;
+                                updated[phIdx] = ph;
+                                return updated;
+                              });
+                            }} className="font-bold">
+                              <CornerDownRight className="mr-2 h-4 w-4" /> Toggle Corner
+                            </ContextMenuItem>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem className="text-destructive font-bold" onClick={() => removePlot(phIdx, plIdx)}>
+                              <Trash2 className="mr-2 h-4 w-4" /> Delete Plot
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
 
           <div className="flex justify-between pt-4">
-            <Button variant="ghost" onClick={() => setStep("basic")}>
+            <Button variant="ghost" size="lg" onClick={() => setStep("basic")}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Basic Info
             </Button>
-            <Button onClick={() => setStep("review")} disabled={phases.length === 0 || totalPlots === 0}>
+            <Button size="lg" onClick={() => setStep("review")} disabled={phases.length === 0 || totalPlots === 0}>
               Review Project <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

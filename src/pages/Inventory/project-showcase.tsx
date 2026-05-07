@@ -10,6 +10,8 @@ import {
   Home,
   ImageIcon,
   Maximize2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ export function ProjectShowcase() {
   const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  const [showPrices, setShowPrices] = useState(true);
 
 
 
@@ -294,12 +297,23 @@ export function ProjectShowcase() {
                     </div>
                   </div>
 
-                 {/* <div className="bg-muted/30 p-3 rounded-md border border-muted-foreground/5 text-center">
-                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Price</p>
-                    <p className="font-bold text-primary text-lg leading-none mt-1">
-                      {selectedPlot.price ? `₹ ${selectedPlot.price.toLocaleString()}` : "On Request"}
+                  <div className="bg-muted/30 p-3 rounded-md border border-muted-foreground/5 text-center relative group">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Price</p>
+                      <button 
+                        onClick={() => setShowPrices(!showPrices)}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title={showPrices ? "Hide Prices" : "Show Prices"}
+                      >
+                        {showPrices ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                      </button>
+                    </div>
+                    <p className="font-black text-primary text-xl leading-none">
+                      {showPrices 
+                        ? (selectedPlot.price ? `₹ ${selectedPlot.price.toLocaleString()}` : "On Request")
+                        : "••••••"}
                     </p>
-                  </div> */}
+                  </div>
 
                   {selectedPlot.bookedBy && (
                     <div className="space-y-2 bg-primary/5 p-3 rounded-lg border border-primary/20 shadow-inner text-xs">
