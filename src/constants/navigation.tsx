@@ -34,7 +34,7 @@ export const navigationData = {
       title: "Inventory",
       url: "/inventory_hub",
       icon: <Package />,
-      isActive: true,
+      // isActive: true,
       items: [
         {
           title: "Inventory listing",
@@ -134,7 +134,19 @@ export const navigationData = {
   // These are routes that don't appear in the sidebar but need a defined path
   breadcrumbOverrides: [
     {
+      path: "/lead-list",
+      label: "All Leads",
+      parent: "/add-lead",
+      isPage: true
+    },
+    {
+      path: "/add-lead",
+      label: "Lead Form",
+      isPage: true
+    },
+    {
       path: "/automation/campaigns",
+
       label: "Campaigns",
       parent: "/automation",
       isPage: true

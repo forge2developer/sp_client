@@ -27,10 +27,15 @@ interface Lead {
     _id: string;
     name: string;
     email: string;
+    phone?: string;
     company?: string;
     status: string;
     value?: number;
     assignedTo: string;
+    campaign?: string;
+    source?: string;
+    sub_source?: string;
+    createdAt?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -97,11 +102,11 @@ export function LeadList() {
                             <TableHeader className="bg-gray-900/[0.03]">
                                 <TableRow>
                                     <TableHead className="font-medium">Lead Info</TableHead>
-                                    <TableHead className="font-medium">Company</TableHead>
-                                    <TableHead className="font-medium">Status</TableHead>
-                                    <TableHead className="font-medium">Value</TableHead>
+                                    <TableHead className="font-medium">Campaign</TableHead>
+                                    <TableHead className="font-medium">Source</TableHead>
+                                    <TableHead className="font-medium">Sub Source</TableHead>
+                                    <TableHead className="font-medium text-nowrap">Received On</TableHead>
                                     <TableHead className="font-medium">Assigned</TableHead>
-                                    <TableHead className="text-right font-medium">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -140,33 +145,23 @@ export function LeadList() {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                    <Building2 className="h-3.5 w-3.5" />
-                                                    {lead.company || "N/A"}
-                                                </div>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {lead.campaign || "N/A"}
                                             </TableCell>
-                                            <TableCell>
-                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[lead.status] || "bg-gray-100 text-gray-700"}`}>
-                                                    {lead.status}
-                                                </span>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {lead.source || "N/A"}
                                             </TableCell>
-                                            <TableCell className="font-medium text-foreground">
-                                                ${lead.value?.toLocaleString() || "0"}
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {lead.sub_source || "N/A"}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground text-nowrap">
+                                                {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2 text-xs">
                                                     <User className="h-3.5 w-3.5 text-muted-foreground" />
                                                     {lead.assignedTo}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    // Handle actions
-                                                }}>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))

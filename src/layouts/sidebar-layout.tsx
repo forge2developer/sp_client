@@ -38,18 +38,7 @@ export default function DashboardLayout() {
 
     // 1. Recursive finder to build the path from navigationData
     const buildPath = (path: string): { label: string; href?: string; isPage?: boolean }[] => {
-      // Check Sidebar Main Nav
-      for (const group of navigationData.navMain) {
-        if (group.url === path) return [{ label: group.title, isPage: true }]
-        const sub = group.items?.find(i => i.url === path)
-        if (sub) return [{ label: group.title, href: group.url }, { label: sub.title, isPage: true }]
-      }
-
-      // Check Sidebar Single Items (Projects)
-      const proj = navigationData.projects.find(p => p.url === path)
-      if (proj) return [{ label: proj.name, isPage: true }]
-
-      // Check Overrides (Complex/Dynamic routes)
+      // Check Overrides FIRST (Complex/Dynamic routes or specific overrides)
       const override = (navigationData as any).breadcrumbOverrides?.find((o: any) => 
         o.matchStart ? path.startsWith(o.path) : path === o.path
       )
@@ -66,6 +55,17 @@ export default function DashboardLayout() {
         }
         return [...parentCrumbs, { label: override.label, isPage: override.isPage }]
       }
+
+      // Check Sidebar Main Nav
+      for (const group of navigationData.navMain) {
+        if (group.url === path) return [{ label: group.title, isPage: true }]
+        const sub = group.items?.find(i => i.url === path)
+        if (sub) return [{ label: group.title, href: group.url }, { label: sub.title, isPage: true }]
+      }
+
+      // Check Sidebar Single Items (Projects)
+      const proj = navigationData.projects.find(p => p.url === path)
+      if (proj) return [{ label: proj.name, isPage: true }]
 
       return []
     }
