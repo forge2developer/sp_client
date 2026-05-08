@@ -17,14 +17,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import api, { type Project, type Phase, type Plot } from "@/lib/api";
+import api, { type Project, type Phase, type Plot, getCachedProject, setCachedProject } from "@/lib/api";
 
 export function ProjectShowcase() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  const [project, setProject] = useState<Project | null>(() => getCachedProject(id || ""));
+  const [loading, setLoading] = useState(!project);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(() => {
+    const cached = getCachedProject(id || "");
+    return cached?.phases?.length > 0 ? cached.phases[0] : null;
+  });
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [showPrices, setShowPrices] = useState(true);
@@ -37,13 +40,16 @@ export function ProjectShowcase() {
 
   const fetchProject = async () => {
     try {
-      setLoading(true);
+      // Only show the full-page loader if we don't have data yet
+      if (!project) setLoading(true);
+      
       const response = await api.get(`/projects/${id}`);
       const data = response.data.data;
       setProject(data);
+      setCachedProject(id || "", data);
 
-      // Auto-select first phase
-      if (data.phases?.length > 0) {
+      // Auto-select first phase only if nothing is selected yet
+      if (data.phases?.length > 0 && !selectedPhase) {
         setSelectedPhase(data.phases[0]);
       }
     } catch (error) {
@@ -53,7 +59,7 @@ export function ProjectShowcase() {
     }
   };
 
-  if (loading) {
+  if (loading && !project) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -330,7 +336,7 @@ export function ProjectShowcase() {
 
                   <div className="pt-2">
                     {selectedPlot.status === "available" ? (
-                      <Button className="w-full font-bold h-10 shadow-lg">Book Now</Button>
+                      <Button className="w-full font-bold h-10 shadow-lg" onClick={() => navigate("/booking-form", { state: { projectId: project.product_id, projectName: project.name, phaseName: selectedPhase?.phaseName, phaseId: selectedPhase?.phaseId, plot: selectedPlot } })}>Book Now</Button>
                     ) : (
                       <Button variant="outline" className="w-full font-bold h-10 text-xs">
                         Manage Booking

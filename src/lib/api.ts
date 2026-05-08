@@ -45,6 +45,17 @@ export const getImageUrl = (path?: string) => {
   return `${API_BASE}/${cleanPath}`;
 };
 
+// ─── Simple Project Cache ───
+export const projectCache: Record<string, any> = {};
+
+export const setCachedProject = (id: string, data: any) => {
+  projectCache[id] = data;
+};
+
+export const getCachedProject = (id: string) => {
+  return projectCache[id] || null;
+};
+
 // ═══════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════
@@ -105,4 +116,22 @@ export interface User {
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Lead {
+  id: string;
+  _id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  source: string;
+  sub_source?: string;
+  campaign?: string;
+  status: string;
+  value: number;
+  assignedTo: string;
+  assignedUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+  project_ids?: string[];
 }

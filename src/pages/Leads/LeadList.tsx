@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import api from "@/lib/api";
+import { grpcApi, type Lead } from "@/lib/api";
 import {
     Table,
     TableBody,
@@ -23,20 +23,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-interface Lead {
-    _id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    company?: string;
-    status: string;
-    value?: number;
-    assignedTo: string;
-    campaign?: string;
-    source?: string;
-    sub_source?: string;
-    createdAt?: string;
-}
+// Removed local Lead interface as it's now imported from @/lib/api
 
 const statusColors: Record<string, string> = {
     "New": "bg-blue-100 text-blue-700 border-blue-200",
@@ -60,8 +47,8 @@ export function LeadList() {
 
     const fetchLeads = async () => {
         try {
-            const response = await api.get("/leads");
-            setLeads(response.data);
+            const response = await grpcApi.get("/leads");
+            setLeads(response.data.data || []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching leads:", error);
@@ -71,7 +58,6 @@ export function LeadList() {
 
     const filteredLeads = leads.filter(lead =>
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -125,9 +111,9 @@ export function LeadList() {
                                 ) : (
                                     filteredLeads.map((lead) => (
                                         <TableRow
-                                            key={lead._id}
+                                            key={lead.id || lead._id}
                                             className="hover:bg-muted/30 transition-colors cursor-pointer group"
-                                            onClick={() => navigate(`/lead-dashboard/${lead._id}`)}
+                                            onClick={() => navigate(`/lead-dashboard/${lead.id || lead._id}`)}
                                         >
                                             <TableCell>
                                                 <div className="flex items-center gap-3">

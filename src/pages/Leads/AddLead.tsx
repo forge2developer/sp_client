@@ -15,7 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import api from "@/lib/api";
+import api, { grpcApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -92,9 +92,9 @@ export function AddLead() {
             setConfigLoading(true);
             try {
                 const [configRes, campaignRes, projectRes] = await Promise.all([
-                    api.get("/grpc/lead-capture-configs"),
-                    api.get("/grpc/campaigns"),
-                    api.get("/grpc/projects")
+                    grpcApi.get("/lead-capture-configs"),
+                    grpcApi.get("/campaigns"),
+                    grpcApi.get("/projects")
                 ]);
                 setConfigs(configRes.data.data || []);
                 setCampaigns(campaignRes.data.data || []);

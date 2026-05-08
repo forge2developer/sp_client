@@ -27,35 +27,9 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import api from "@/lib/api";
+import { grpcApi, type Lead } from "@/lib/api";
 
-interface Lead {
-    _id: string;
-    name: string;
-    email: string;
-    phone: string;
-    company: string;
-    status: string;
-    source: string;
-    value: number;
-    notes: string;
-    assignedTo: string;
-    campaign?: string;
-    sub_source?: string;
-    createdAt: string;
-    interestedProjects?: string[];
-    campaignResponse?: {
-        status: string;
-        lastAction: string;
-        score: number;
-    };
-    requirements?: {
-        budget?: string;
-        location?: string;
-        type?: string;
-        urgency?: string;
-    };
-}
+// Removed local Lead interface as it's now imported from @/lib/api
 
 interface LeadActivity {
     _id: string;
@@ -86,11 +60,11 @@ export function LeadDashboard() {
         const fetchLeadAndActivities = async () => {
             try {
                 const [leadRes, activitiesRes] = await Promise.all([
-                    api.get(`/leads/${id}`),
-                    api.get(`/leads/${id}/activities`)
+                    grpcApi.get(`/leads/${id}`),
+                    grpcApi.get(`/leads/${id}/activities`)
                 ]);
-                setLead(leadRes.data);
-                setActivities(activitiesRes.data);
+                setLead(leadRes.data.data);
+                setActivities(activitiesRes.data.data || []);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching lead data:", error);

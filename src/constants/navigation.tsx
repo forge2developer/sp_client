@@ -134,14 +134,9 @@ export const navigationData = {
   // These are routes that don't appear in the sidebar but need a defined path
   breadcrumbOverrides: [
     {
-      path: "/lead-list",
-      label: "All Leads",
-      parent: "/add-lead",
-      isPage: true
-    },
-    {
       path: "/add-lead",
       label: "Lead Form",
+      parent: "/lead_hub",
       isPage: true
     },
     {
@@ -182,6 +177,12 @@ export const navigationData = {
       parent: "/inventory_listing",
       isPage: true,
       matchStart: true // Matches /project_showcase/:id
+    },
+    {
+      path: "/booking-form",
+      label: "Booking Form",
+      parent: "/inventory_listing",
+      isPage: true
     }
   ]
 }

@@ -7,6 +7,7 @@ import DashboardPage from "./pages/Dashboard/dashboard-page"
 import { InventoryHub } from "./pages/Inventory/inventory-hub"
 import { InventoryListing } from "./pages/Inventory/inventory-listing"
 import { AddInventory } from "./pages/Inventory/add-inventory"
+import { BookingFormPage } from "./pages/Inventory/booking-form"
 import GeneralSettings from "./pages/Settings/GeneralSettings"
 import ImportData from "./pages/Settings/ImportData"
 import ManageUsers from "./pages/Settings/ManageUsers"
@@ -51,6 +52,7 @@ export function App() {
             <Route path="/inventory_listing" element={<InventoryListing />} />
             <Route path="/add_inventory" element={<AddInventory />} />
             <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
+            <Route path="/booking-form" element={<BookingFormPage />} />
           </Route>
 
           {/*Tools Routes*/}
