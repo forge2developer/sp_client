@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { format } from "date-fns";
+import { Loader2, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,13 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 
 const INDUSTRIES = [
@@ -45,6 +53,38 @@ function SectionBar({ label }: { label: string }) {
   );
 }
 
+function DatePicker({ date, setDate }: { date: Date | undefined; setDate: (d: Date | undefined) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            INPUT_CLS,
+            "justify-start text-left font-semibold",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "PPP") : <span>Pick a date</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          captionLayout="dropdown"
+          fromYear={1900}
+          toYear={new Date().getFullYear()}
+          disabled={{ after: new Date() }}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function BookingFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,7 +95,7 @@ export function BookingFormPage() {
 
   // Applicant 1
   const [a1Name, setA1Name] = useState("");
-  const [a1Dob, setA1Dob] = useState("");
+  const [a1Dob, setA1Dob] = useState<Date | undefined>(undefined);
   const [a1Relation, setA1Relation] = useState("");
   const [a1Phone, setA1Phone] = useState("");
   const [a1Email, setA1Email] = useState("");
@@ -71,7 +111,7 @@ export function BookingFormPage() {
   const [a2Name, setA2Name] = useState("");
   const [a2Phone, setA2Phone] = useState("");
   const [a2Email, setA2Email] = useState("");
-  const [a2Dob, setA2Dob] = useState("");
+  const [a2Dob, setA2Dob] = useState<Date | undefined>(undefined);
   const [a2Relation, setA2Relation] = useState("");
   const [a2Aadhar, setA2Aadhar] = useState("");
   const [a2Pan, setA2Pan] = useState("");
@@ -118,8 +158,8 @@ export function BookingFormPage() {
         phaseId, plotId: plot.plotId, leadName: a1Name, phone: a1Phone,
         bookingDetails: {
           type: bookingType,
-          applicant: { name: a1Name, dob: a1Dob, relation: a1Relation, phone: a1Phone, email: a1Email, aadhar: a1Aadhar, pan: a1Pan, address: { house: a1House, street2: a1Street2, city: a1City, state: a1State, postal: a1Postal } },
-          coApplicant: { name: a2Name, phone: a2Phone, email: a2Email, dob: a2Dob, relation: a2Relation, aadhar: a2Aadhar, pan: a2Pan, address: { house: a2House, street2: a2Street2, city: a2City, state: a2State, postal: a2Postal } },
+          applicant: { name: a1Name, dob: a1Dob ? format(a1Dob, "yyyy-MM-dd") : "", relation: a1Relation, phone: a1Phone, email: a1Email, aadhar: a1Aadhar, pan: a1Pan, address: { house: a1House, street2: a1Street2, city: a1City, state: a1State, postal: a1Postal } },
+          coApplicant: { name: a2Name, phone: a2Phone, email: a2Email, dob: a2Dob ? format(a2Dob, "yyyy-MM-dd") : "", relation: a2Relation, aadhar: a2Aadhar, pan: a2Pan, address: { house: a2House, street2: a2Street2, city: a2City, state: a2State, postal: a2Postal } },
           professional: { industry, function: func, income },
           source: source === "Others" ? sourceOther : source,
           paymentMode, purpose, existingCustomer, ownedProject, ownedCity,
@@ -178,7 +218,7 @@ export function BookingFormPage() {
                 <div className="space-y-5 py-4">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-center text-muted-foreground border-b pb-2">Name of the Sole / First Applicant</h4>
                   <Field label="Mr./Mrs./Ms. Full Name" required><Input value={a1Name} onChange={e => setA1Name(e.target.value)} className={INPUT_CLS} required /></Field>
-                  <Field label="Date of Birth / Age"><Input type="date" value={a1Dob} onChange={e => setA1Dob(e.target.value)} className={INPUT_CLS} /></Field>
+                  <Field label="Date of Birth / Age"><DatePicker date={a1Dob} setDate={setA1Dob} /></Field>
                   <Field label="Son / Daughter / Wife of"><Input value={a1Relation} onChange={e => setA1Relation(e.target.value)} className={INPUT_CLS} /></Field>
                   <Field label="Mobile No." required><Input value={a1Phone} onChange={e => setA1Phone(e.target.value.replace(/\D/g, ""))} className={INPUT_CLS} required /></Field>
                   <Field label="Email Id"><Input type="email" value={a1Email} onChange={e => setA1Email(e.target.value)} className={INPUT_CLS} /></Field>
@@ -204,7 +244,7 @@ export function BookingFormPage() {
                     <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Name of the Co / Second Applicant</h4>
                   </div>
                   <Field label="Mr./Mrs./Ms. Full Name"><Input value={a2Name} onChange={e => setA2Name(e.target.value)} className={INPUT_CLS} /></Field>
-                  <Field label="Date of Birth / Age"><Input type="date" value={a2Dob} onChange={e => setA2Dob(e.target.value)} className={INPUT_CLS} /></Field>
+                  <Field label="Date of Birth / Age"><DatePicker date={a2Dob} setDate={setA2Dob} /></Field>
                   <Field label="Son / Daughter / Wife of"><Input value={a2Relation} onChange={e => setA2Relation(e.target.value)} className={INPUT_CLS} /></Field>
                   <Field label="Mobile No."><Input value={a2Phone} onChange={e => setA2Phone(e.target.value.replace(/\D/g, ""))} className={INPUT_CLS} /></Field>
                   <Field label="Email Id"><Input type="email" value={a2Email} onChange={e => setA2Email(e.target.value)} className={INPUT_CLS} /></Field>
