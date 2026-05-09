@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Loader2, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar as CalendarIcon, Check, Camera, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import api from "@/lib/api";
+import api, { grpcApi } from "@/lib/api";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
 
 const INDUSTRIES = [
   "IT", "ITES/BPO/KPO", "Manufacturing", "Retail Services",
@@ -33,8 +35,10 @@ const INCOME_RANGES = ["Less than 5 lakh", "5-15 lakh", "15-25 lakh", "25-50 lak
 const SOURCES = ["Advertisement", "Company Website", "Referral", "Agent", "Walk In", "Hoarding", "Others"];
 const PAYMENT_MODES = ["Own Funds", "Home Loan", "Both"];
 const PURPOSES = ["Own Use", "Investment", "Others"];
+const FACINGS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"];
 
-const INPUT_CLS = "h-11 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-semibold px-4";
+
+const INPUT_CLS = "h-8 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-semibold px-4";
 
 function Field({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
@@ -47,7 +51,7 @@ function Field({ label, required, children, className = "" }: { label: string; r
 
 function SectionBar({ label }: { label: string }) {
   return (
-    <div className="bg-red-600 text-white px-4 py-2 rounded-sm -mx-8 md:-mx-10">
+    <div className="bg-red-600 text-white px-4 py-2 -mx-8 md:-mx-10">
       <h3 className="text-[11px] font-black uppercase tracking-[0.2em]">{label}</h3>
     </div>
   );
@@ -88,17 +92,142 @@ function DatePicker({ date, setDate }: { date: Date | undefined; setDate: (d: Da
 export function BookingFormPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projectId, projectName, phaseName, phaseId, plot } = location.state || {};
+  const { 
+    projectId: initialProjectId, 
+    projectName: initialProjectName, 
+    phaseName: initialPhaseName, 
+    phaseId: initialPhaseId, 
+    plot: initialPlot, 
+    bookingType: initialBookingType,
+    leadName: initialLeadName,
+    leadPhone: initialLeadPhone,
+    leadEmail: initialLeadEmail
+  } = location.state || {};
+
+  // Hide the top selection card only if we already have a project/plot locked in
+  const isDirectBooking = !!(initialPlot || initialProjectId);
 
   const [submitting, setSubmitting] = useState(false);
-  const [bookingType, setBookingType] = useState<"Sales" | "Purchase">("Sales");
+  const [bookingType, setBookingType] = useState<"Sales" | "Purchase">(initialBookingType || "Sales");
+
+  // Selection state
+  const [projects, setProjects] = useState<any[]>([]);
+  const [phases, setPhases] = useState<any[]>([]);
+  const [plots, setPlots] = useState<any[]>([]);
+
+  const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId?.toString() || "");
+  const [selectedPhaseId, setSelectedPhaseId] = useState(initialPhaseId?.toString() || "");
+  const [selectedPlot, setSelectedPlot] = useState<any>(initialPlot || null);
+  const [selectedFacing, setSelectedFacing] = useState(initialPlot?.facing || "");
+  const [manualPlotNumber, setManualPlotNumber] = useState(initialPlot?.plotNumber || "");
+  const [manualSize, setManualSize] = useState(initialPlot?.size || "");
+  const [manualPrice, setManualPrice] = useState(initialPlot?.price || "");
+
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [loadingPhases, setLoadingPhases] = useState(false);
+  const [loadingPlots, setLoadingPlots] = useState(false);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoadingProjects(true);
+      try {
+        const res = await api.get("/projects");
+        const data = res.data.data || res.data;
+        setProjects(Array.isArray(data) ? data : (data.projects || []));
+      } catch (err) {
+        console.error("Failed to fetch projects", err);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedProjectId) {
+      setPhases([]);
+      setSelectedPhaseId("");
+      return;
+    }
+    const fetchPhases = async () => {
+      if (!selectedProjectId) return;
+      setLoadingPhases(true);
+      try {
+        // Strategy 1: Try api.get (common for details)
+        const res = await api.get(`/projects/${selectedProjectId}`);
+        const data = res.data.data || res.data;
+        if (data?.phases) {
+          setPhases(data.phases);
+          setLoadingPhases(false);
+          return;
+        }
+
+        // Strategy 2: Try grpcApi (common for list/gateway)
+        const gRes = await grpcApi.get(`/projects/${selectedProjectId}`);
+        const gData = gRes.data.data || gRes.data;
+        if (gData?.phases) {
+          setPhases(gData.phases);
+        } else {
+          setPhases([]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch phases", err);
+        setPhases([]);
+      } finally {
+        setLoadingPhases(false);
+      }
+    };
+    if (!initialPhaseId || selectedProjectId !== initialProjectId) {
+        fetchPhases();
+    } else {
+        // If we have initial data, we might need to fetch the phases anyway to show in dropdown
+        fetchPhases();
+    }
+  }, [selectedProjectId, initialProjectId, initialPhaseId]);
+
+  useEffect(() => {
+    if (!selectedPhaseId || !selectedProjectId) {
+      setPlots([]);
+      if (!initialPlot) setSelectedPlot(null);
+      return;
+    }
+    // Moved to separate useEffect with activePhase dependency
+  }, [selectedPhaseId, selectedProjectId, initialPlot]);
+
+  const activeProject = projects.find(p => p.product_id?.toString() === selectedProjectId?.toString());
+  const activePhase = phases.find(p => (p.phaseId || p.id || p._id)?.toString() === selectedPhaseId?.toString());
+
+  useEffect(() => {
+    if (activePhase && activePhase.plots && activePhase.plots.length > 0) {
+      setPlots(activePhase.plots);
+    } else if (selectedPhaseId && selectedProjectId) {
+        // Only fetch if activePhase doesn't have plots
+        fetchPlots();
+    } else {
+        setPlots([]);
+    }
+  }, [activePhase, selectedPhaseId, selectedProjectId]);
+
+  const fetchPlots = async () => {
+    if (!selectedProjectId || !selectedPhaseId) return;
+    setLoadingPlots(true);
+    try {
+      const res = await api.get(`/projects/${selectedProjectId}/phases/${selectedPhaseId}/inventory`);
+      setPlots(res.data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch plots", err);
+      setPlots([]);
+    } finally {
+      setLoadingPlots(false);
+    }
+  };
 
   // Applicant 1
-  const [a1Name, setA1Name] = useState("");
+  const [a1Name, setA1Name] = useState(initialLeadName);
   const [a1Dob, setA1Dob] = useState<Date | undefined>(undefined);
   const [a1Relation, setA1Relation] = useState("");
-  const [a1Phone, setA1Phone] = useState("");
-  const [a1Email, setA1Email] = useState("");
+  const [a1Phone, setA1Phone] = useState(initialLeadPhone);
+  const [a1Email, setA1Email] = useState(initialLeadEmail);
   const [a1Aadhar, setA1Aadhar] = useState("");
   const [a1Pan, setA1Pan] = useState("");
   const [a1House, setA1House] = useState("");
@@ -106,6 +235,8 @@ export function BookingFormPage() {
   const [a1City, setA1City] = useState("");
   const [a1State, setA1State] = useState("");
   const [a1Postal, setA1Postal] = useState("");
+  const [a1Landmark, setA1Landmark] = useState("");
+  const [a1Country, setA1Country] = useState("");
 
   // Co-applicant
   const [a2Name, setA2Name] = useState("");
@@ -120,6 +251,10 @@ export function BookingFormPage() {
   const [a2City, setA2City] = useState("");
   const [a2State, setA2State] = useState("");
   const [a2Postal, setA2Postal] = useState("");
+  const [a2Landmark, setA2Landmark] = useState("");
+  const [a2Country, setA2Country] = useState("");
+  const [a1Image, setA1Image] = useState<string | null>(null);
+  const [a2Image, setA2Image] = useState<string | null>(null);
 
   // Professional & Source
   const [industry, setIndustry] = useState("");
@@ -131,7 +266,7 @@ export function BookingFormPage() {
   const [sourceOther, setSourceOther] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [purpose, setPurpose] = useState("");
-  const [existingCustomer, setExistingCustomer] = useState<"yes" | "no" | "">("");
+  const [existingCustomer, setExistingCustomer] = useState<"yes" | "no">("no");
   const [ownedProject, setOwnedProject] = useState("");
   const [ownedCity, setOwnedCity] = useState("");
 
@@ -140,26 +275,49 @@ export function BookingFormPage() {
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  if (!plot) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[80vh] gap-4">
-        <h2 className="text-2xl font-bold">No plot selected</h2>
-        <Button onClick={() => navigate(-1)}>Go Back</Button>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (selectedPlot) {
+      setSelectedFacing(selectedPlot.facing || "");
+      setManualPlotNumber(selectedPlot.plotNumber || "");
+      setManualSize(selectedPlot.size || "");
+      setManualPrice(selectedPlot.price || "");
+    }
+  }, [selectedPlot]);
+
+  const resetForm = () => {
+    if (!window.confirm("Are you sure you want to clear all form data?")) return;
+    
+    // Always clear applicant/lead details
+    setA1Name(""); setA1Dob(undefined); setA1Relation(""); setA1Phone(""); setA1Email(""); setA1Aadhar(""); setA1Pan(""); setA1House(""); setA1Street2(""); setA1Landmark(""); setA1City(""); setA1State(""); setA1Postal(""); setA1Country("India"); setA1Image(null);
+    setA2Name(""); setA2Dob(undefined); setA2Relation(""); setA2Aadhar(""); setA2Pan(""); setA2Phone(""); setA2Email(""); setA2House(""); setA2Street2(""); setA2Landmark(""); setA2City(""); setA2State(""); setA2Postal(""); setA2Country("India"); setA2Image(null);
+    setIndustry(""); setIndustryOther(""); setFunc(""); setFuncOther(""); setIncome(""); setSource(""); setSourceOther(""); setPaymentMode(""); setPurpose(""); setExistingCustomer("no"); setOwnedProject(""); setOwnedCity("");
+    setTotalAmount(""); setAdvanceAmount(""); setRemarks("");
+    
+    // Only clear property selection if it wasn't pre-locked (from Inventory/Lead)
+    if (!isDirectBooking) {
+      setSelectedFacing(""); setManualPlotNumber(""); setManualSize(""); setManualPrice("");
+      setSelectedProjectId(""); setSelectedPhaseId(""); setSelectedPlot(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedPlot && !manualPlotNumber && !selectedFacing) {
+      return alert("Please select a plot or provide pre-launch details (Plot No / Facing).");
+    }
     if (!a1Name || !a1Phone) return alert("Name and Phone are required.");
     setSubmitting(true);
     try {
-      await api.post(`/projects/${projectId}/book`, {
-        phaseId, plotId: plot.plotId, leadName: a1Name, phone: a1Phone,
+      await api.post(`/projects/${selectedProjectId}/book`, {
+        phaseId: selectedPhaseId, plotId: selectedPlot?.plotId || selectedPlot?.id || selectedPlot?._id || "pre-launch", leadName: a1Name, phone: a1Phone,
         bookingDetails: {
           type: bookingType,
-          applicant: { name: a1Name, dob: a1Dob ? format(a1Dob, "yyyy-MM-dd") : "", relation: a1Relation, phone: a1Phone, email: a1Email, aadhar: a1Aadhar, pan: a1Pan, address: { house: a1House, street2: a1Street2, city: a1City, state: a1State, postal: a1Postal } },
-          coApplicant: { name: a2Name, phone: a2Phone, email: a2Email, dob: a2Dob ? format(a2Dob, "yyyy-MM-dd") : "", relation: a2Relation, aadhar: a2Aadhar, pan: a2Pan, address: { house: a2House, street2: a2Street2, city: a2City, state: a2State, postal: a2Postal } },
+          facing: selectedFacing,
+          plotNumber: manualPlotNumber,
+          size: manualSize,
+          price: manualPrice,
+          applicant: { name: a1Name, dob: a1Dob ? format(a1Dob, "yyyy-MM-dd") : "", relation: a1Relation, phone: a1Phone, email: a1Email, aadhar: a1Aadhar, pan: a1Pan, address: { house: a1House, street2: a1Street2, landmark: a1Landmark, city: a1City, state: a1State, postal: a1Postal, country: a1Country } },
+          coApplicant: { name: a2Name, phone: a2Phone, email: a2Email, dob: a2Dob ? format(a2Dob, "yyyy-MM-dd") : "", relation: a2Relation, aadhar: a2Aadhar, pan: a2Pan, address: { house: a2House, street2: a2Street2, landmark: a2Landmark, city: a2City, state: a2State, postal: a2Postal, country: a2Country } },
           professional: { industry, function: func, income },
           source: source === "Others" ? sourceOther : source,
           paymentMode, purpose, existingCustomer, ownedProject, ownedCity,
@@ -168,7 +326,7 @@ export function BookingFormPage() {
           remarks,
         },
       });
-      navigate(`/project_showcase/${projectId}`);
+      navigate(`/project_showcase/${selectedProjectId}`);
     } catch (err: any) {
       alert(err?.response?.data?.message || "Booking failed.");
     } finally {
@@ -180,11 +338,114 @@ export function BookingFormPage() {
     <div className="min-h-screen bg-slate-50/30 py-6 px-2">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
-          <div>
-            <h1 className="text-2xl font-black tracking-tight">Plot Booking Form</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">{projectName} · {phaseName} · Plot {plot.plotNumber}{plot.size ? ` · ${plot.size} Sqft` : ""}</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="hover:bg-slate-100 rounded-full"><ArrowLeft className="h-5 w-5" /></Button>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-slate-900">Plot Booking Form</h1>
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Official Documentation</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 flex-1">
+            {!isDirectBooking && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Select Project</Label>
+                  <Select value={selectedProjectId || "none"} onValueChange={(v) => { setSelectedProjectId(v === "none" ? "" : v); setSelectedPhaseId(""); setSelectedPlot(null); }}>
+                    <SelectTrigger className="w-[200px] h-10 text-xs font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all">
+                      <SelectValue placeholder={loadingProjects ? "Loading..." : "Choose Project"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingProjects ? (
+                        <div className="flex items-center justify-center p-4"><Loader2 className="h-4 w-4 animate-spin text-red-600" /></div>
+                      ) : (
+                        <>
+                          <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                          {projects.map(p => <SelectItem key={p.product_id || p._id} value={p.product_id?.toString()} className="text-xs font-bold">{p.name}</SelectItem>)}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Select Phase</Label>
+                  <Select value={selectedPhaseId || "none"} onValueChange={(v) => { setSelectedPhaseId(v === "none" ? "" : v); setSelectedPlot(null); }} disabled={!selectedProjectId || loadingPhases}>
+                    <SelectTrigger className="w-[180px] h-10 text-xs font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all">
+                      <SelectValue placeholder={loadingPhases ? "Loading..." : "Choose Phase"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingPhases ? (
+                        <div className="flex items-center justify-center p-4"><Loader2 className="h-4 w-4 animate-spin text-red-600" /></div>
+                      ) : (
+                        <>
+                          <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                          {phases.map(p => (
+                            <SelectItem 
+                              key={p.id || p._id || p.phaseId || p.product_id} 
+                              value={(p.id || p._id || p.phaseId || p.product_id)?.toString()} 
+                              className="text-xs font-bold"
+                            >
+                              {p.phaseName}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Select Plot</Label>
+                  <Select value={(selectedPlot?.plotId || selectedPlot?.id || selectedPlot?._id)?.toString() || "none"} onValueChange={(v) => setSelectedPlot(v === "none" ? null : plots.find(p => (p.plotId || p.id || p._id)?.toString() === v))} disabled={!selectedPhaseId}>
+                    <SelectTrigger className="w-[150px] h-10 text-xs font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all">
+                      <SelectValue placeholder="Choose Plot" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <ScrollArea className="h-60">
+                        {loadingPlots ? (
+                            <div className="flex items-center justify-center p-4"><Loader2 className="h-4 w-4 animate-spin text-red-600" /></div>
+                        ) : (
+                            <>
+                                <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None (Pre-Launch)</SelectItem>
+                                {plots.map(p => (
+                                <SelectItem key={p.plotId || p.id || p._id} value={(p.plotId || p.id || p._id)?.toString()} className="text-xs font-bold">
+                                    Plot {p.plotNumber} {p.size ? `(${p.size} Sq.Ft)` : ""}
+                                </SelectItem>
+                                ))}
+                            </>
+                        )}
+                      </ScrollArea>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Facing Preference</Label>
+                  <Select value={selectedFacing} onValueChange={(v) => setSelectedFacing(v === "none" ? "" : v)}>
+                    <SelectTrigger className="w-[140px] h-10 text-xs font-bold bg-slate-50 border-slate-200 focus:bg-white transition-all">
+                      <SelectValue placeholder="Select Facing" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {FACINGS.map(f => <SelectItem key={f} value={f} className="text-xs font-bold">{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {!selectedPlot && (
+                  <div className="space-y-1">
+                    <Label className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Manual Sq.Ft</Label>
+                    <Input value={manualSize} onChange={e => setManualSize(e.target.value)} className="w-[100px] h-7 text-xs font-bold bg-slate-50 border-slate-200" placeholder="Size" />
+                  </div>
+                )}
+              </>
+            )}
+            
+            <div className="ml-auto flex items-center pt-2">
+              <Button type="button" variant="outline" onClick={resetForm} className="h-10 px-4 text-[10px] font-black tracking-widest border-red-200 text-red-600 hover:bg-red-50">CLEAR FORM</Button>
+            </div>
           </div>
         </div>
 
@@ -195,16 +456,27 @@ export function BookingFormPage() {
             <div className="px-8 md:px-10 py-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-6 text-xs text-muted-foreground">
                 <span><strong className="text-foreground">Date:</strong> {new Date().toLocaleDateString("en-IN")}</span>
-                <span><strong className="text-foreground">Plot:</strong> {plot.plotNumber}</span>
-                <span><strong className="text-foreground">Sq.Ft:</strong> {plot.size || "—"}</span>
-                <span><strong className="text-foreground">Facing:</strong> {plot.facing || "N/A"}</span>
-                {plot.isCorner && <Badge className="bg-amber-500/10 text-amber-600 border-amber-300 text-[9px]">Corner Plot</Badge>}
+                {selectedPlot || manualPlotNumber || selectedFacing ? (
+                  <>
+                    <span><strong className="text-foreground">Plot:</strong> {manualPlotNumber || "—"}</span>
+                    <span><strong className="text-foreground">Sq.Ft:</strong> {manualSize || "—"}</span>
+                    <span><strong className="text-foreground">Facing:</strong> {selectedFacing || "—"}</span>
+                    {selectedPlot?.isCorner && <Badge className="bg-amber-500/10 text-amber-600 border-amber-300 text-[9px]">Corner Plot</Badge>}
+                  </>
+                ) : (
+                  <span className="text-red-500 font-bold italic">No selection made yet</span>
+                )}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {(["Sales", "Purchase"] as const).map(t => (
                   <button key={t} type="button" onClick={() => setBookingType(t)}
-                    className={`h-8 px-5 rounded-md text-[10px] font-black tracking-widest border transition-all ${bookingType === t ? "bg-red-600 border-red-600 text-white" : "border-slate-200 bg-white text-slate-500 hover:border-red-600 hover:text-red-600"}`}
-                  >{t.toUpperCase()}</button>
+                    className={`group flex items-center gap-3 h-9 px-5 rounded-md text-[10px] font-black tracking-widest border transition-all ${bookingType === t ? "bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20" : "border-slate-200 bg-white text-slate-500 hover:border-red-600 hover:text-red-600"}`}
+                  >
+                    <div className={`w-4 h-4 rounded-sm border flex items-center justify-center transition-all ${bookingType === t ? "bg-white border-white text-red-600" : "bg-slate-50 border-slate-200"}`}>
+                        {bookingType === t && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    {t.toUpperCase()}
+                  </button>
                 ))}
               </div>
             </div>
@@ -216,7 +488,44 @@ export function BookingFormPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-0">
                 {/* ── LEFT: Primary Applicant ── */}
                 <div className="space-y-5 py-4">
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-center text-muted-foreground border-b pb-2">Name of the Sole / First Applicant</h4>
+                  <div className="flex flex-col items-center gap-4 border-b pb-4">
+                    <div className="relative group">
+                      <div className="w-24 h-28 bg-slate-100 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-red-400 group-hover:bg-red-50">
+                        {a1Image ? (
+                          <img src={a1Image} alt="Applicant 1" className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <User className="h-8 w-8 text-slate-300" />
+                            <span className="text-[8px] font-black text-slate-400 mt-2">PHOTO</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setA1Image(URL.createObjectURL(file));
+                          }}
+                        />
+                      </div>
+                      {a1Image && (
+                        <button 
+                          onClick={() => setA1Image(null)}
+                          className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow-sm hover:text-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                      {!a1Image && (
+                        <div className="absolute -bottom-2 -right-2 bg-red-600 text-white rounded-full p-1.5 shadow-lg shadow-red-600/20">
+                          <Camera className="h-3 w-3" />
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground text-center">Name of the Sole / First Applicant</h4>
+                  </div>
+                  
                   <Field label="Mr./Mrs./Ms. Full Name" required><Input value={a1Name} onChange={e => setA1Name(e.target.value)} className={INPUT_CLS} required /></Field>
                   <Field label="Date of Birth / Age"><DatePicker date={a1Dob} setDate={setA1Dob} /></Field>
                   <Field label="Son / Daughter / Wife of"><Input value={a1Relation} onChange={e => setA1Relation(e.target.value)} className={INPUT_CLS} /></Field>
@@ -230,19 +539,58 @@ export function BookingFormPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Correspondence Address</p>
                     <Field label="House / Street No."><Input value={a1House} onChange={e => setA1House(e.target.value)} className={INPUT_CLS} /></Field>
                     <Field label="Street 2"><Input value={a1Street2} onChange={e => setA1Street2(e.target.value)} className={INPUT_CLS} /></Field>
-                    <div className="grid grid-cols-3 gap-3">
+                    <Field label="Landmark"><Input value={a1Landmark} onChange={e => setA1Landmark(e.target.value)} className={INPUT_CLS} /></Field>
+                    <div className="grid grid-cols-2 gap-3">
                       <Field label="City"><Input value={a1City} onChange={e => setA1City(e.target.value)} className={INPUT_CLS} /></Field>
                       <Field label="State"><Input value={a1State} onChange={e => setA1State(e.target.value)} className={INPUT_CLS} /></Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <Field label="Postal Code"><Input value={a1Postal} onChange={e => setA1Postal(e.target.value.replace(/\D/g, ""))} className={INPUT_CLS} /></Field>
+                      <Field label="Country"><Input value={a1Country} onChange={e => setA1Country(e.target.value)} className={INPUT_CLS} /></Field>
                     </div>
                   </div>
                 </div>
 
                 {/* ── RIGHT: Co-Applicant ── */}
                 <div className="space-y-5 py-4 lg:border-l lg:pl-12 border-slate-100">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground">Name of the Co / Second Applicant</h4>
+                  <div className="flex flex-col items-center gap-4 border-b pb-4">
+                    <div className="relative group">
+                      <div className="w-24 h-28 bg-slate-100 border-2 border-dashed border-slate-200 rounded-lg flex flex-col items-center justify-center overflow-hidden transition-all group-hover:border-red-400 group-hover:bg-red-50">
+                        {a2Image ? (
+                          <img src={a2Image} alt="Applicant 2" className="w-full h-full object-cover" />
+                        ) : (
+                          <>
+                            <User className="h-8 w-8 text-slate-300" />
+                            <span className="text-[8px] font-black text-slate-400 mt-2">PHOTO</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setA2Image(URL.createObjectURL(file));
+                          }}
+                        />
+                      </div>
+                      {a2Image && (
+                        <button 
+                          onClick={() => setA2Image(null)}
+                          className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 shadow-sm hover:text-red-600 transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                      {!a2Image && (
+                        <div className="absolute -bottom-2 -right-2 bg-red-600 text-white rounded-full p-1.5 shadow-lg shadow-red-600/20">
+                          <Camera className="h-3 w-3" />
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground text-center">Name of the Co / Second Applicant</h4>
                   </div>
+                  
                   <Field label="Mr./Mrs./Ms. Full Name"><Input value={a2Name} onChange={e => setA2Name(e.target.value)} className={INPUT_CLS} /></Field>
                   <Field label="Date of Birth / Age"><DatePicker date={a2Dob} setDate={setA2Dob} /></Field>
                   <Field label="Son / Daughter / Wife of"><Input value={a2Relation} onChange={e => setA2Relation(e.target.value)} className={INPUT_CLS} /></Field>
@@ -256,10 +604,14 @@ export function BookingFormPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Correspondence Address</p>
                     <Field label="House / Street No."><Input value={a2House} onChange={e => setA2House(e.target.value)} className={INPUT_CLS} /></Field>
                     <Field label="Street 2"><Input value={a2Street2} onChange={e => setA2Street2(e.target.value)} className={INPUT_CLS} /></Field>
-                    <div className="grid grid-cols-3 gap-3">
+                    <Field label="Landmark"><Input value={a2Landmark} onChange={e => setA2Landmark(e.target.value)} className={INPUT_CLS} /></Field>
+                    <div className="grid grid-cols-2 gap-3">
                       <Field label="City"><Input value={a2City} onChange={e => setA2City(e.target.value)} className={INPUT_CLS} /></Field>
                       <Field label="State"><Input value={a2State} onChange={e => setA2State(e.target.value)} className={INPUT_CLS} /></Field>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <Field label="Postal Code"><Input value={a2Postal} onChange={e => setA2Postal(e.target.value.replace(/\D/g, ""))} className={INPUT_CLS} /></Field>
+                      <Field label="Country"><Input value={a2Country} onChange={e => setA2Country(e.target.value)} className={INPUT_CLS} /></Field>
                     </div>
                   </div>
                 </div>
@@ -270,11 +622,18 @@ export function BookingFormPage() {
             <div className="px-8 md:px-10 py-8 space-y-6 border-t border-slate-100">
               <SectionBar label="Plot / Property Details" />
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <Field label="Project Name"><Input value={projectName} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
-                <Field label="Plot No."><Input value={plot.plotNumber} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
-                <Field label="Sq. Ft."><Input value={plot.size?.toString() || "—"} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
-                <Field label="Price (₹)"><Input value={plot.price ? `₹ ${plot.price.toLocaleString("en-IN")}` : "On Request"} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
-                <Field label="Facing"><Input value={plot.facing || "N/A"} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
+                <Field label="Project Name"><Input value={activeProject?.name || initialProjectName || "—"} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
+                <Field label="Plot No."><Input value={manualPlotNumber} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
+                <Field label="Sq. Ft."><Input value={manualSize} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
+                <Field label="Price (₹)"><Input value={manualPrice ? `₹ ${parseFloat(manualPrice.toString()).toLocaleString("en-IN")}` : "—"} disabled className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`} /></Field>
+                <Field label="Facing">
+                  <Select value={selectedFacing} onValueChange={setSelectedFacing} disabled>
+                    <SelectTrigger className={`${INPUT_CLS} bg-slate-100 text-slate-500 cursor-not-allowed`}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      {FACINGS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
               </div>
               <Field label="Remarks"><Textarea value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Additional notes..." className="min-h-[70px] rounded-md border-slate-200 bg-slate-50/50 text-xs font-semibold px-4 py-3" /></Field>
             </div>
@@ -284,18 +643,27 @@ export function BookingFormPage() {
               <SectionBar label="Professional Details" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Field label="Industry">
-                  <Select value={industry} onValueChange={setIndustry}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select>
+                  <Select value={industry || "none"} onValueChange={(v) => setIndustry(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+                    </SelectContent></Select>
                   {industry === "Others" && <Input value={industryOther} onChange={e => setIndustryOther(e.target.value)} placeholder="If others, please specify" className={`${INPUT_CLS} mt-2`} />}
                 </Field>
                 <Field label="Function">
-                  <Select value={func} onValueChange={setFunc}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{FUNCTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select>
+                  <Select value={func || "none"} onValueChange={(v) => setFunc(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {FUNCTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                    </SelectContent></Select>
                   {func === "Others" && <Input value={funcOther} onChange={e => setFuncOther(e.target.value)} placeholder="If others, please specify" className={`${INPUT_CLS} mt-2`} />}
                 </Field>
                 <Field label="Annual Income (INR)">
-                  <Select value={income} onValueChange={setIncome}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{INCOME_RANGES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select>
+                  <Select value={income || "none"} onValueChange={(v) => setIncome(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {INCOME_RANGES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent></Select>
                 </Field>
               </div>
             </div>
@@ -305,16 +673,25 @@ export function BookingFormPage() {
               <SectionBar label="Source & Payment" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Field label="How did you come to know about this Project?">
-                  <Select value={source} onValueChange={setSource}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select source" /></SelectTrigger>
-                    <SelectContent>{SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+                  <Select value={source || "none"} onValueChange={(v) => setSource(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select source" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent></Select>
                 </Field>
                 {source === "Others" && <Field label="If others, please specify"><Input value={sourceOther} onChange={e => setSourceOther(e.target.value)} className={INPUT_CLS} /></Field>}
                 <Field label="Existing Customer?">
                   <div className="flex gap-3 pt-1">
                     {(["yes", "no"] as const).map(v => (
-                      <button key={v} type="button" onClick={() => setExistingCustomer(v)}
-                        className={`h-9 px-5 rounded-md text-[10px] font-black tracking-widest border transition-all ${existingCustomer === v ? "bg-red-600 border-red-600 text-white" : "border-slate-200 bg-white text-slate-500 hover:border-red-600"}`}
-                      >{v.toUpperCase()}</button>
+                      <Button
+                        key={v}
+                        type="button"
+                        onClick={() => setExistingCustomer(v)}
+                        variant={existingCustomer === v ? "default" : "outline"}
+                        className="h-8 px-5 rounded-md text-[10px] font-black tracking-widest"
+                      >
+                        {v.toUpperCase()}
+                      </Button>
                     ))}
                   </div>
                 </Field>
@@ -325,12 +702,18 @@ export function BookingFormPage() {
                   </>
                 )}
                 <Field label="Mode of Payment / Source">
-                  <Select value={paymentMode} onValueChange={setPaymentMode}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{PAYMENT_MODES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent></Select>
+                  <Select value={paymentMode || "none"} onValueChange={(v) => setPaymentMode(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {PAYMENT_MODES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent></Select>
                 </Field>
                 <Field label="Purpose of Purchase">
-                  <Select value={purpose} onValueChange={setPurpose}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{PURPOSES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select>
+                  <Select value={purpose || "none"} onValueChange={(v) => setPurpose(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
+                      {PURPOSES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    </SelectContent></Select>
                 </Field>
               </div>
             </div>
@@ -342,7 +725,7 @@ export function BookingFormPage() {
                 <Field label="Total Amount (₹)"><Input type="number" value={totalAmount} onChange={e => setTotalAmount(e.target.value)} placeholder="0.00" className={INPUT_CLS} /></Field>
                 <Field label="Booking Advance Amount (₹)"><Input type="number" value={advanceAmount} onChange={e => setAdvanceAmount(e.target.value)} placeholder="0.00" className={INPUT_CLS} /></Field>
                 <Field label="Balance Amount (₹)">
-                  <div className="h-11 rounded-md border border-red-200 bg-red-50 flex items-center px-4">
+                  <div className="h-8 rounded-md border border-red-200 bg-red-50 flex items-center px-4">
                     <span className="text-sm font-black text-red-600">₹ {(parseFloat(totalAmount || "0") - parseFloat(advanceAmount || "0")).toLocaleString("en-IN")}</span>
                   </div>
                 </Field>

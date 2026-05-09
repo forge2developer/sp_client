@@ -124,9 +124,7 @@ export interface Lead {
   name: string;
   email: string;
   phone: string;
-  source: string;
-  sub_source?: string;
-  campaign?: string;
+
   status: string;
   value: number;
   assignedTo: string;
@@ -134,4 +132,56 @@ export interface Lead {
   createdAt: string;
   updatedAt: string;
   project_ids?: string[];
+
+  // Dynamic fields from LeadCaptureConfig
+  location?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  province?: string;
+  country?: string;
+  post_code?: string;
+  zip_code?: string;
+
+  dob?: string;
+  gender?: string;
+  marital_status?: string;
+  relationship_status?: string;
+  military_status?: string;
+  education_level?: string;
+
+  job_title?: string;
+  work_phone?: string;
+  work_email?: string;
+  company?: string;
+  website?: string;
+
+  requirements?: {
+    budget?: string;
+    location?: string;
+    type?: string;
+    urgency?: string;
+    preferred_floor?: string;
+    sqft?: string;
+    bhk?: string;
+    parking_needed?: string;
+    furnishing?: string;
+    bathroom_count?: string;
+    primary_project?: string;
+    interested_projects?: string;
+  };
+
+  interestedProjects?: string[];
+  campaignResponse?: {
+    score?: number;
+    lastAction?: string;
+    status?: string;
+  };
+  campaign_responses?: Array<{
+    campaign: string;
+    source: string;
+    sub_source?: string;
+    project?: string;
+    engagedAt: string;
+  }>;
 }

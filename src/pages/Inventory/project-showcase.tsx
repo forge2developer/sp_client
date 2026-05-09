@@ -42,7 +42,7 @@ export function ProjectShowcase() {
     try {
       // Only show the full-page loader if we don't have data yet
       if (!project) setLoading(true);
-      
+
       const response = await api.get(`/projects/${id}`);
       const data = response.data.data;
       setProject(data);
@@ -82,7 +82,7 @@ export function ProjectShowcase() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 p-1 relative">
       {/* Fullscreen Overlay */}
       {fullscreenImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setFullscreenImage(null)}
         >
@@ -129,22 +129,20 @@ export function ProjectShowcase() {
                         setSelectedPhase(phase);
                         setSelectedPlot(null);
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-md flex items-center justify-between text-sm font-medium transition-colors ${
-                        selectedPhase?.phaseId === phase.phaseId
+                      className={`w-full text-left px-3 py-2.5 rounded-md flex items-center justify-between text-sm font-medium transition-colors ${selectedPhase?.phaseId === phase.phaseId
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       <span className="flex items-center gap-2">
                         <LayoutGrid className="h-4 w-4" /> {phase.phaseName}
                       </span>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${
-                          selectedPhase?.phaseId === phase.phaseId
+                        className={`text-[10px] ${selectedPhase?.phaseId === phase.phaseId
                             ? "bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
                             : ""
-                        }`}
+                          }`}
                       >
                         {phase.plots.length}
                       </Badge>
@@ -180,30 +178,27 @@ export function ProjectShowcase() {
                     <button
                       key={plot.plotId}
                       onClick={() => setSelectedPlot(plot)}
-                      className={`aspect-square rounded-xl border-2 p-2 flex flex-col items-center justify-center transition-all relative group shadow-sm ${
-                        selectedPlot?.plotId === plot.plotId
+                      className={`aspect-square rounded-xl border-2 p-2 flex flex-col items-center justify-center transition-all relative group shadow-sm ${selectedPlot?.plotId === plot.plotId
                           ? "border-primary bg-primary text-primary-foreground shadow-lg scale-105 z-10"
                           : plot.status === "available"
-                          ? "bg-white border-green-500/20 hover:border-green-500/50"
-                          : plot.status === "booked"
-                          ? "bg-yellow-50 border-yellow-500/20 hover:border-yellow-500/50"
-                          : "bg-red-50 border-red-500/20 hover:border-red-500/50"
-                      } ${
-                        plot.isCorner && selectedPlot?.plotId !== plot.plotId
+                            ? "bg-white border-green-500/20 hover:border-green-500/50"
+                            : plot.status === "booked"
+                              ? "bg-yellow-50 border-yellow-500/20 hover:border-yellow-500/50"
+                              : "bg-red-50 border-red-500/20 hover:border-red-500/50"
+                        } ${plot.isCorner && selectedPlot?.plotId !== plot.plotId
                           ? "ring-2 ring-amber-400 ring-offset-1"
                           : ""
-                      }`}
+                        }`}
                     >
                       <Home
-                        className={`h-6 w-6 mb-1 ${
-                          selectedPlot?.plotId === plot.plotId
+                        className={`h-6 w-6 mb-1 ${selectedPlot?.plotId === plot.plotId
                             ? "text-primary-foreground"
                             : plot.status === "available"
-                            ? "text-green-500"
-                            : plot.status === "booked"
-                            ? "text-yellow-600"
-                            : "text-red-500"
-                        }`}
+                              ? "text-green-500"
+                              : plot.status === "booked"
+                                ? "text-yellow-600"
+                                : "text-red-500"
+                          }`}
                       />
                       <span className="text-sm font-black">{plot.plotNumber}</span>
                       {plot.isCorner && selectedPlot?.plotId !== plot.plotId && (
@@ -237,8 +232,8 @@ export function ProjectShowcase() {
                 <ScrollArea className="w-full whitespace-nowrap pb-2">
                   <div className="flex gap-3">
                     {layoutImages.map((img, idx) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className="group relative w-32 aspect-video rounded-lg overflow-hidden border-2 border-muted hover:border-primary transition-all cursor-pointer shadow-sm flex-shrink-0"
                         onClick={() => setFullscreenImage(img)}
                       >
@@ -277,8 +272,8 @@ export function ProjectShowcase() {
                         selectedPlot.status === "available"
                           ? "default"
                           : selectedPlot.status === "booked"
-                          ? "secondary"
-                          : "destructive"
+                            ? "secondary"
+                            : "destructive"
                       }
                       className="uppercase font-bold tracking-widest text-[9px]"
                     >
@@ -306,7 +301,7 @@ export function ProjectShowcase() {
                   <div className="bg-muted/30 p-3 rounded-md border border-muted-foreground/5 text-center relative group">
                     <div className="flex items-center justify-center gap-2 mb-1">
                       <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Price</p>
-                      <button 
+                      <button
                         onClick={() => setShowPrices(!showPrices)}
                         className="text-muted-foreground hover:text-primary transition-colors"
                         title={showPrices ? "Hide Prices" : "Show Prices"}
@@ -315,7 +310,7 @@ export function ProjectShowcase() {
                       </button>
                     </div>
                     <p className="font-black text-primary text-xl leading-none">
-                      {showPrices 
+                      {showPrices
                         ? (selectedPlot.price ? `₹ ${selectedPlot.price.toLocaleString()}` : "On Request")
                         : "••••••"}
                     </p>

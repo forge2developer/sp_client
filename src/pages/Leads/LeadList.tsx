@@ -115,7 +115,13 @@ export function LeadList() {
                                             className="hover:bg-muted/30 transition-colors cursor-pointer group"
                                             onClick={() => navigate(`/lead-dashboard/${lead.id || lead._id}`)}
                                         >
-                                            <TableCell>
+                                            {(() => {
+                                                const latestResponse = lead.campaign_responses && lead.campaign_responses.length > 0
+                                                    ? lead.campaign_responses[lead.campaign_responses.length - 1]
+                                                    : null;
+                                                return (
+                                                    <>
+                                                        <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                                                         {lead.name.charAt(0)}
@@ -132,13 +138,13 @@ export function LeadList() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
-                                                {lead.campaign || "N/A"}
+                                                {latestResponse?.campaign || "N/A"}
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
-                                                {lead.source || "N/A"}
+                                                {latestResponse?.source || "N/A"}
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
-                                                {lead.sub_source || "N/A"}
+                                                {latestResponse?.sub_source || "N/A"}
                                             </TableCell>
                                             <TableCell className="text-sm text-muted-foreground text-nowrap">
                                                 {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
@@ -149,6 +155,9 @@ export function LeadList() {
                                                     {lead.assignedTo}
                                                 </div>
                                             </TableCell>
+                                                    </>
+                                                );
+                                            })()}
                                         </TableRow>
                                     ))
                                 )}
