@@ -37,20 +37,24 @@ export default function DashboardLayout() {
     if (pathname === "/dashboard") return [{ label: "Dashboard", isPage: true }]
 
     // 1. Recursive finder to build the path from navigationData
-    const buildPath = (path: string): { label: string; href?: string; isPage?: boolean }[] => {
+    const buildPath = (path: string, useDynamicParent = true): { label: string; href?: string; isPage?: boolean }[] => {
+      // 0. Check location state for dynamic parent override (only for the initial call to prevent infinite recursion)
+      const dynamicParent = useDynamicParent ? (location.state as any)?.breadcrumbParent : null
+      
       // Check Overrides FIRST (Complex/Dynamic routes or specific overrides)
       const override = (navigationData as any).breadcrumbOverrides?.find((o: any) => 
         o.matchStart ? path.startsWith(o.path) : path === o.path
       )
       
       if (override) {
-        const parentCrumbs = override.parent ? buildPath(override.parent) : []
+        const parentPath = (dynamicParent && dynamicParent !== path) ? dynamicParent : override.parent
+        const parentCrumbs = parentPath ? buildPath(parentPath, false) : []
         // Convert the last parent crumb from isPage to a link if we are adding a child
         if (parentCrumbs.length > 0) {
           const last = parentCrumbs[parentCrumbs.length - 1]
           if (last.isPage) {
             last.isPage = false
-            last.href = override.parent
+            last.href = parentPath
           }
         }
         return [...parentCrumbs, { label: override.label, isPage: override.isPage }]

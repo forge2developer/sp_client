@@ -273,19 +273,7 @@ export function InventoryListing() {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between px-1">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Inventory Listing
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Manage and view your plotted development projects.
-          </p>
-        </div>
-        <Button onClick={() => navigate("/add_inventory")}>
-          <Plus className="mr-2 h-4 w-4" /> Add Project
-        </Button>
-      </div>
+      
 
       {/* Toolbar Row 1: Search + Grid/Table toggle */}
       <div className="flex justify-between items-center gap-4 py-2 w-full flex-wrap">
