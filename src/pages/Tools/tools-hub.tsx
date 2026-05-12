@@ -21,14 +21,8 @@ export default function ToolsHub() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Tools & Integrations</h1>
-        <p className="text-muted-foreground">
-          Select a tool to automate your workflow or manage integrations.
-        </p>
-      </div>
-
+    <div className="space-y-6 p-6">
+      
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {options.map((option) => (
           <Link key={option.href} to={option.href}>

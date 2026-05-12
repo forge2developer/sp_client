@@ -2,37 +2,37 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   MapPin,
-  ChevronRight,
-  ChevronDown,
   Loader2,
   ArrowLeft,
   Info,
-  User,
-  Calendar,
-  Phone,
   LayoutGrid,
   CornerDownRight,
   Home,
   ImageIcon,
   Maximize2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import api, { type Project, type Phase, type Plot } from "@/lib/api";
+import api, { type Project, type Phase, type Plot, getCachedProject, setCachedProject } from "@/lib/api";
 
 export function ProjectShowcase() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(null);
+  const [project, setProject] = useState<Project | null>(() => getCachedProject(id || ""));
+  const [loading, setLoading] = useState(!project);
+  const [selectedPhase, setSelectedPhase] = useState<Phase | null>(() => {
+    const cached = getCachedProject(id || "");
+    return cached?.phases?.length > 0 ? cached.phases[0] : null;
+  });
   const [selectedPlot, setSelectedPlot] = useState<Plot | null>(null);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  const [showPrices, setShowPrices] = useState(true);
 
-  const organization = "SP_PROMOTERS";
+
 
   useEffect(() => {
     fetchProject();
@@ -40,13 +40,16 @@ export function ProjectShowcase() {
 
   const fetchProject = async () => {
     try {
-      setLoading(true);
-      const response = await api.get(`/projects/${id}?organization=${organization}`);
+      // Only show the full-page loader if we don't have data yet
+      if (!project) setLoading(true);
+
+      const response = await api.get(`/projects/${id}`);
       const data = response.data.data;
       setProject(data);
+      setCachedProject(id || "", data);
 
-      // Auto-select first phase
-      if (data.phases?.length > 0) {
+      // Auto-select first phase only if nothing is selected yet
+      if (data.phases?.length > 0 && !selectedPhase) {
         setSelectedPhase(data.phases[0]);
       }
     } catch (error) {
@@ -56,7 +59,7 @@ export function ProjectShowcase() {
     }
   };
 
-  if (loading) {
+  if (loading && !project) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -79,7 +82,7 @@ export function ProjectShowcase() {
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 p-1 relative">
       {/* Fullscreen Overlay */}
       {fullscreenImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-300"
           onClick={() => setFullscreenImage(null)}
         >
@@ -126,22 +129,20 @@ export function ProjectShowcase() {
                         setSelectedPhase(phase);
                         setSelectedPlot(null);
                       }}
-                      className={`w-full text-left px-3 py-2.5 rounded-md flex items-center justify-between text-sm font-medium transition-colors ${
-                        selectedPhase?.phaseId === phase.phaseId
+                      className={`w-full text-left px-3 py-2.5 rounded-md flex items-center justify-between text-sm font-medium transition-colors ${selectedPhase?.phaseId === phase.phaseId
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       <span className="flex items-center gap-2">
                         <LayoutGrid className="h-4 w-4" /> {phase.phaseName}
                       </span>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] ${
-                          selectedPhase?.phaseId === phase.phaseId
+                        className={`text-[10px] ${selectedPhase?.phaseId === phase.phaseId
                             ? "bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30"
                             : ""
-                        }`}
+                          }`}
                       >
                         {phase.plots.length}
                       </Badge>
@@ -177,30 +178,27 @@ export function ProjectShowcase() {
                     <button
                       key={plot.plotId}
                       onClick={() => setSelectedPlot(plot)}
-                      className={`aspect-square rounded-xl border-2 p-2 flex flex-col items-center justify-center transition-all relative group shadow-sm ${
-                        selectedPlot?.plotId === plot.plotId
+                      className={`aspect-square rounded-xl border-2 p-2 flex flex-col items-center justify-center transition-all relative group shadow-sm ${selectedPlot?.plotId === plot.plotId
                           ? "border-primary bg-primary text-primary-foreground shadow-lg scale-105 z-10"
                           : plot.status === "available"
-                          ? "bg-white border-green-500/20 hover:border-green-500/50"
-                          : plot.status === "booked"
-                          ? "bg-yellow-50 border-yellow-500/20 hover:border-yellow-500/50"
-                          : "bg-red-50 border-red-500/20 hover:border-red-500/50"
-                      } ${
-                        plot.isCorner && selectedPlot?.plotId !== plot.plotId
+                            ? "bg-white border-green-500/20 hover:border-green-500/50"
+                            : plot.status === "booked"
+                              ? "bg-yellow-50 border-yellow-500/20 hover:border-yellow-500/50"
+                              : "bg-red-50 border-red-500/20 hover:border-red-500/50"
+                        } ${plot.isCorner && selectedPlot?.plotId !== plot.plotId
                           ? "ring-2 ring-amber-400 ring-offset-1"
                           : ""
-                      }`}
+                        }`}
                     >
                       <Home
-                        className={`h-6 w-6 mb-1 ${
-                          selectedPlot?.plotId === plot.plotId
+                        className={`h-6 w-6 mb-1 ${selectedPlot?.plotId === plot.plotId
                             ? "text-primary-foreground"
                             : plot.status === "available"
-                            ? "text-green-500"
-                            : plot.status === "booked"
-                            ? "text-yellow-600"
-                            : "text-red-500"
-                        }`}
+                              ? "text-green-500"
+                              : plot.status === "booked"
+                                ? "text-yellow-600"
+                                : "text-red-500"
+                          }`}
                       />
                       <span className="text-sm font-black">{plot.plotNumber}</span>
                       {plot.isCorner && selectedPlot?.plotId !== plot.plotId && (
@@ -234,8 +232,8 @@ export function ProjectShowcase() {
                 <ScrollArea className="w-full whitespace-nowrap pb-2">
                   <div className="flex gap-3">
                     {layoutImages.map((img, idx) => (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className="group relative w-32 aspect-video rounded-lg overflow-hidden border-2 border-muted hover:border-primary transition-all cursor-pointer shadow-sm flex-shrink-0"
                         onClick={() => setFullscreenImage(img)}
                       >
@@ -274,8 +272,8 @@ export function ProjectShowcase() {
                         selectedPlot.status === "available"
                           ? "default"
                           : selectedPlot.status === "booked"
-                          ? "secondary"
-                          : "destructive"
+                            ? "secondary"
+                            : "destructive"
                       }
                       className="uppercase font-bold tracking-widest text-[9px]"
                     >
@@ -300,12 +298,23 @@ export function ProjectShowcase() {
                     </div>
                   </div>
 
-                 {/* <div className="bg-muted/30 p-3 rounded-md border border-muted-foreground/5 text-center">
-                    <p className="text-[9px] text-muted-foreground uppercase font-bold">Price</p>
-                    <p className="font-bold text-primary text-lg leading-none mt-1">
-                      {selectedPlot.price ? `₹ ${selectedPlot.price.toLocaleString()}` : "On Request"}
+                  <div className="bg-muted/30 p-3 rounded-md border border-muted-foreground/5 text-center relative group">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <p className="text-[9px] text-muted-foreground uppercase font-black tracking-widest">Price</p>
+                      <button
+                        onClick={() => setShowPrices(!showPrices)}
+                        className="text-muted-foreground hover:text-primary transition-colors"
+                        title={showPrices ? "Hide Prices" : "Show Prices"}
+                      >
+                        {showPrices ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                      </button>
+                    </div>
+                    <p className="font-black text-primary text-xl leading-none">
+                      {showPrices
+                        ? (selectedPlot.price ? `₹ ${selectedPlot.price.toLocaleString()}` : "On Request")
+                        : "••••••"}
                     </p>
-                  </div> */}
+                  </div>
 
                   {selectedPlot.bookedBy && (
                     <div className="space-y-2 bg-primary/5 p-3 rounded-lg border border-primary/20 shadow-inner text-xs">
@@ -322,7 +331,7 @@ export function ProjectShowcase() {
 
                   <div className="pt-2">
                     {selectedPlot.status === "available" ? (
-                      <Button className="w-full font-bold h-10 shadow-lg">Book Now</Button>
+                      <Button className="w-full font-bold h-10 shadow-lg" onClick={() => navigate("/booking-form", { state: { projectId: project.product_id, projectName: project.name, phaseName: selectedPhase?.phaseName, phaseId: selectedPhase?.phaseId, plot: selectedPlot } })}>Book Now</Button>
                     ) : (
                       <Button variant="outline" className="w-full font-bold h-10 text-xs">
                         Manage Booking

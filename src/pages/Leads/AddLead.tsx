@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
     ChevronLeft,
     Target,
-    Plus,
     Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,10 +16,10 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import api, { grpcApi } from "@/lib/api";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-const organization = "SP_PROMOTERS";
+
 
 const CONTACT_FIELD_GROUPS = [
     {
@@ -66,7 +65,7 @@ const REQUIREMENT_FIELDS = [
     { id: "preferred_floor", label: "Preferred Floor" },
     { id: "interested_projects", label: "Interested Projects / Types" },
     { id: "sqft", label: "Square Footage" },
-    { id: "bhk", label: "Type (BHK)", options: ["1BHK", "2BHK", "3BHK", "4BHK", "5BHK+"] },
+    { id: "bhk", label: "Type (BHK)", options: ["1BHK", "2BHK", "3BHK", "4BHK", "5BHK+"], multiSelect: true },
     { id: "parking_needed", label: "Parking", options: ["REQUIRED", "NOT REQUIRED"] },
     { id: "furnishing", label: "Furnishing", options: ["FURNISHED", "UNFURNISHED", "SEMI-FURNISHED"] },
     { id: "bathroom_count", label: "Bathroom Count" },
@@ -93,9 +92,9 @@ export function AddLead() {
             setConfigLoading(true);
             try {
                 const [configRes, campaignRes, projectRes] = await Promise.all([
-                    api.get("/grpc/lead-capture-configs?organization=SP_PROMOTERS"),
-                    api.get("/grpc/campaigns?organization=SP_PROMOTERS"),
-                    api.get("/grpc/projects?organization=SP_PROMOTERS")
+                    grpcApi.get("/lead-capture-configs"),
+                    grpcApi.get("/campaigns"),
+                    grpcApi.get("/projects")
                 ]);
                 setConfigs(configRes.data.data || []);
                 setCampaigns(campaignRes.data.data || []);
@@ -171,7 +170,7 @@ export function AddLead() {
                 name: name || "",
                 phone: phone || "",
                 email: email || "",
-                organization: "SP_PROMOTERS",
+
                 project_ids: submissionProjectIds,
                 config_id: selectedConfig.id,
                 source: source === "none" ? "Direct" : (source || selectedConfig.source || "Direct"),
@@ -226,15 +225,32 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground">Phone Number <span className="text-red-600 ml-1">*</span></Label>
                                             <Input
                                                 required
+                                                type="tel"
+                                                pattern="[0-9]*"
                                                 placeholder="Enter phone number"
                                                 className="h-12 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6"
                                                 value={dynamicFormData.phone || ""}
-                                                onChange={(e) => setDynamicFormData({ ...dynamicFormData, phone: e.target.value })}
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, ""); // Remove non-numeric
+                                                    setDynamicFormData({ ...dynamicFormData, phone: val });
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-foreground">Email Address <span className="text-red-600 ml-1">*</span></Label>
+                                            <Input
+                                                required
+                                                type="email"
+                                                placeholder="Enter email address"
+                                                className="h-12 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6"
+                                                value={dynamicFormData.email || ""}
+                                                onChange={(e) => setDynamicFormData({ ...dynamicFormData, email: e.target.value })}
                                             />
                                         </div>
 
                                         {/* Standard Selected Contact Fields */}
-                                        {selectedConfig.selected_contact_fields?.map((fieldId: string) => {
+                                        {selectedConfig.selected_contact_fields?.filter((id: string) => id !== 'email').map((fieldId: string) => {
                                             const field = CONTACT_FIELD_GROUPS.flatMap(g => g.fields).find(f => f.id === fieldId);
                                             const label = field ? field.label : fieldId.replace(/_/g, ' ');
                                             return (
@@ -303,37 +319,61 @@ export function AddLead() {
                                                                      <SelectValue placeholder="Select Interested Project" />
                                                                  </SelectTrigger>
                                                                  <SelectContent>
-                                                                     {projects.length > 0 ? (
-                                                                         projects.map((p) => (
-                                                                             <SelectItem key={p.id || p._id} value={p.name}>
-                                                                                 {p.name}
-                                                                             </SelectItem>
-                                                                         ))
-                                                                     ) : (
-                                                                         <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
-                                                                             No projects available
-                                                                         </div>
-                                                                     )}
+                                                                     <ScrollArea className="max-h-[280px]">
+                                                                         <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Interested Project</SelectItem>
+                                                                         {projects.length > 0 ? (
+                                                                             projects.map((p) => (
+                                                                                 <SelectItem key={p.id || p._id} value={p.name}>
+                                                                                     {p.name}
+                                                                                 </SelectItem>
+                                                                             ))
+                                                                         ) : (
+                                                                             <div className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">
+                                                                                 No projects available
+                                                                             </div>
+                                                                         )}
+                                                                     </ScrollArea>
                                                                  </SelectContent>
                                                              </Select>
                                                          )
                                                      ) : field?.options ? (
                                                          <div className="flex flex-wrap gap-2">
-                                                             {field.options.map((opt) => (
+                                                             {field.options.map((opt) => {
+                                                                 const isMulti = (field as any).multiSelect;
+                                                                 const currentVal = dynamicFormData[fieldId] || "";
+                                                                 const isSelected = isMulti 
+                                                                     ? currentVal.split(", ").includes(opt)
+                                                                     : currentVal === opt;
+
+                                                                 return (
                                                                  <button
                                                                      key={opt}
                                                                      type="button"
-                                                                     onClick={() => setDynamicFormData({ ...dynamicFormData, [fieldId]: opt })}
+                                                                     onClick={() => {
+                                                                         if (isMulti) {
+                                                                             let arr = currentVal ? currentVal.split(", ") : [];
+                                                                             if (arr.includes(opt)) {
+                                                                                 arr = arr.filter((x: string) => x !== opt);
+                                                                             } else {
+                                                                                 arr.push(opt);
+                                                                             }
+                                                                             setDynamicFormData({ ...dynamicFormData, [fieldId]: arr.join(", ") });
+                                                                         } else {
+                                                                             const newVal = currentVal === opt ? "" : opt;
+                                                                             setDynamicFormData({ ...dynamicFormData, [fieldId]: newVal });
+                                                                         }
+                                                                     }}
                                                                      className={cn(
                                                                          "h-10 px-6 rounded-md flex items-center justify-center text-[10px] font-black tracking-widest border transition-all duration-300",
-                                                                         dynamicFormData[fieldId] === opt
+                                                                         isSelected
                                                                              ? "bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/20 scale-105"
                                                                              : "border-slate-200 bg-white text-slate-500 hover:border-red-600 hover:text-red-600"
                                                                      )}
                                                                  >
                                                                      {opt}
                                                                  </button>
-                                                             ))}
+                                                                 );
+                                                             })}
                                                          </div>
                                                      ) : (
                                                          <Input
@@ -380,18 +420,27 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70 px-1">Campaign Name <span className="text-red-600 ml-1">*</span></Label>
                                             <Select
                                                 value={dynamicFormData.campaign || ""}
-                                                onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, campaign: value })}
+                                                onValueChange={(value) => {
+                                                    setDynamicFormData({ 
+                                                        ...dynamicFormData, 
+                                                        campaign: value,
+                                                        source: "",
+                                                        sub_source: ""
+                                                    });
+                                                }}
                                             >
                                                 <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm">
                                                     <SelectValue placeholder="Select Campaign" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Campaign</SelectItem>
-                                                    {campaigns.map(c => (
-                                                        <SelectItem key={c.id} value={c.campaignName} className="text-xs font-bold">
-                                                            {c.campaignName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Campaign</SelectItem>
+                                                        {campaigns.map(c => (
+                                                            <SelectItem key={c.id} value={c.campaignName} className="text-xs font-bold">
+                                                                {c.campaignName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -399,19 +448,28 @@ export function AddLead() {
                                             <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70 px-1">Source <span className="text-red-600 ml-1">*</span></Label>
                                             <Select
                                                 value={dynamicFormData.source || ""}
-                                                onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, source: value })}
-                                                disabled={!dynamicFormData.campaign || dynamicFormData.campaign === "none"}
+                                                onValueChange={(value) => {
+                                                    setDynamicFormData({ 
+                                                        ...dynamicFormData, 
+                                                        source: value,
+                                                        sub_source: ""
+                                                    });
+                                                }}
+                                                disabled={!dynamicFormData.campaign || dynamicFormData.campaign === "none" || dynamicFormData.campaign === ""}
                                             >
-                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50">
+                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                                                     <SelectValue placeholder="Select Source" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Source</SelectItem>
-                                                    {availableSources.map(s => (
-                                                        <SelectItem key={s.uuid || s.sourceName} value={s.sourceName} className="text-xs font-bold">
-                                                            {s.sourceName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Source</SelectItem>
+                                                        {availableSources.map(s => (
+                                                            <SelectItem key={s.uuid || s.sourceName} value={s.sourceName} className="text-xs font-bold">
+                                                                {s.sourceName}
+                                                            </SelectItem>
+                                                            
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -420,18 +478,20 @@ export function AddLead() {
                                             <Select
                                                 value={dynamicFormData.sub_source || ""}
                                                 onValueChange={(value) => setDynamicFormData({ ...dynamicFormData, sub_source: value })}
-                                                disabled={!dynamicFormData.source || dynamicFormData.source === "none"}
+                                                disabled={!dynamicFormData.source || dynamicFormData.source === "none" || dynamicFormData.source === ""}
                                             >
-                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50">
+                                                <SelectTrigger className="h-12 w-full rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-bold px-6 border shadow-sm disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">
                                                     <SelectValue placeholder="Select Sub Source" />
                                                 </SelectTrigger>
-                                                <SelectContent className="max-h-[300px]">
-                                                    <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Sub Source</SelectItem>
-                                                    {availableSubSources.map(ss => (
-                                                        <SelectItem key={ss.uuid || ss.subSourceName} value={ss.subSourceName} className="text-xs font-bold">
-                                                            {ss.subSourceName}
-                                                        </SelectItem>
-                                                    ))}
+                                                <SelectContent>
+                                                    <ScrollArea className="max-h-[280px]">
+                                                        <SelectItem value="none" className="text-xs font-bold text-muted-foreground/60 italic">Select Sub Source</SelectItem>
+                                                        {availableSubSources.map(ss => (
+                                                            <SelectItem key={ss.uuid || ss.subSourceName} value={ss.subSourceName} className="text-xs font-bold">
+                                                                {ss.subSourceName}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </ScrollArea>
                                                 </SelectContent>
                                             </Select>
                                         </div>
@@ -503,7 +563,46 @@ export function AddLead() {
                         </div>
                     )}
                 </div>
+            </div >
+            <div className="max-w-6xl w-full space-y-4 py-8">
+                <div className="col-span-full">
+                    <h2 className="text-xl font-black text-foreground uppercase tracking-tight">Professional Booking</h2>
+                    <p className="text-muted-foreground text-xs mb-8">Deploy a high-fidelity plot booking form for confirmed sales.</p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div
+                            className="group p-8 rounded-xl border border-slate-200 bg-white hover:border-red-600/30 hover:shadow-2xl hover:shadow-red-600/5 transition-all duration-300 flex flex-col justify-between gap-6 cursor-pointer"
+                            onClick={() => {
+                                const selectedProjectObj = projects.find(p => p.name === dynamicFormData.interested_projects);
+                                navigate("/booking-form", { 
+                                    state: { 
+                                        leadName: dynamicFormData.name, 
+                                        leadPhone: dynamicFormData.phone, 
+                                        leadEmail: dynamicFormData.email,
+                                        projectId: selectedProjectObj?.product_id || selectedProjectObj?.id || selectedProjectObj?._id,
+                                        breadcrumbParent: "/add-lead"
+                                    } 
+                                });
+                            }}
+                        >
+                            <div className="flex items-start gap-6">
+                                <div className="h-14 w-14 rounded-xl bg-red-600/10 flex items-center justify-center flex-shrink-0 group-hover:bg-red-600 transition-colors duration-300">
+                                    <Target className="h-6 w-6 text-red-600 group-hover:text-white transition-colors duration-300" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-foreground group-hover:text-red-600 transition-colors leading-tight tracking-tighter">
+                                        Plot Booking Form
+                                    </h3>
+                                    <p className="text-xs font-bold text-muted-foreground leading-relaxed">
+                                        Deploy the <span className="text-red-600 uppercase tracking-widest text-[10px] ml-1">Official Booking</span> workflow for high-fidelity data entry.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+            </div>
+        
     );
 }

@@ -6,7 +6,6 @@ interface User {
   name: string;
   email: string;
   role: string;
-  organization: string;
   token?: string;
 }
 
@@ -44,23 +43,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     checkLoggedIn();
   }, [API_URL]);
 
-  const hashPassword = async (password: string) => {
-    if (!window.crypto || !window.crypto.subtle) {
-      console.warn("WebCrypto not available. Using fallback.");
-      return btoa(password);
-    }
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-  };
-
   const login = async (email: string, password: string) => {
-    const hashedPassword = await hashPassword(password);
     const res = await axios.post(`${API_URL}/login`, {
       email,
-      password: hashedPassword,
+      password,
     });
     if (res.data.success) {
       localStorage.setItem("token", res.data.data.token);

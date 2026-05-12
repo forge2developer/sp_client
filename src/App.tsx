@@ -7,6 +7,7 @@ import DashboardPage from "./pages/Dashboard/dashboard-page"
 import { InventoryHub } from "./pages/Inventory/inventory-hub"
 import { InventoryListing } from "./pages/Inventory/inventory-listing"
 import { AddInventory } from "./pages/Inventory/add-inventory"
+import { BookingFormPage } from "./pages/Inventory/booking-form"
 import GeneralSettings from "./pages/Settings/GeneralSettings"
 import ImportData from "./pages/Settings/ImportData"
 import ManageUsers from "./pages/Settings/ManageUsers"
@@ -25,6 +26,7 @@ import ToolsHub from "./pages/Tools/tools-hub"
 import ProfilePage from "./pages/Profile/profile-page"
 import { ReportPage } from "./pages/Reports/Report-page"
 import ProtectedRoute from "./components/ProtectedRoute"
+import CalendarView from "./pages/Calandar/calendar_view"
 
 
 export function App() {
@@ -50,6 +52,7 @@ export function App() {
             <Route path="/inventory_listing" element={<InventoryListing />} />
             <Route path="/add_inventory" element={<AddInventory />} />
             <Route path="/project_showcase/:id" element={<ProjectShowcase />} />
+            <Route path="/booking-form" element={<BookingFormPage />} />
           </Route>
 
           {/*Tools Routes*/}
@@ -83,7 +86,11 @@ export function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/report_page" element={<ReportPage />} />
           </Route>
-
+          {/*Calender  */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/calendar_view" element={<CalendarView />} />
+          </Route>
+    
           {/* Profile & Duplicate Routes */}
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<ProfilePage />} />

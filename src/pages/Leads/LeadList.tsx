@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Plus,
     Search,
@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import api from "@/lib/api";
+import { grpcApi, type Lead } from "@/lib/api";
 import {
     Table,
     TableBody,
@@ -23,15 +23,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-interface Lead {
-    _id: string;
-    name: string;
-    email: string;
-    company?: string;
-    status: string;
-    value?: number;
-    assignedTo: string;
-}
+// Removed local Lead interface as it's now imported from @/lib/api
 
 const statusColors: Record<string, string> = {
     "New": "bg-blue-100 text-blue-700 border-blue-200",
@@ -55,8 +47,8 @@ export function LeadList() {
 
     const fetchLeads = async () => {
         try {
-            const response = await api.get("/leads");
-            setLeads(response.data);
+            const response = await grpcApi.get("/leads");
+            setLeads(response.data.data || []);
             setLoading(false);
         } catch (error) {
             console.error("Error fetching leads:", error);
@@ -66,21 +58,12 @@ export function LeadList() {
 
     const filteredLeads = leads.filter(lead =>
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground">Lead Management</h1>
-                    <p className="text-muted-foreground mt-1">Manage and track your potential customers.</p>
-                </div>
-                <Button onClick={() => navigate("/add-lead")} className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 font-bold shadow-lg shadow-red-600/20">
-                    <Plus className="h-4 w-4 mr-2" /> Add New Lead
-                </Button>
-            </div>
+            
 
             <Card className="border-none shadow-sm bg-card">
                 <CardHeader className="pb-3">
@@ -105,11 +88,11 @@ export function LeadList() {
                             <TableHeader className="bg-gray-900/[0.03]">
                                 <TableRow>
                                     <TableHead className="font-medium">Lead Info</TableHead>
-                                    <TableHead className="font-medium">Company</TableHead>
-                                    <TableHead className="font-medium">Status</TableHead>
-                                    <TableHead className="font-medium">Value</TableHead>
+                                    <TableHead className="font-medium">Campaign</TableHead>
+                                    <TableHead className="font-medium">Source</TableHead>
+                                    <TableHead className="font-medium">Sub Source</TableHead>
+                                    <TableHead className="font-medium text-nowrap">Received On</TableHead>
                                     <TableHead className="font-medium">Assigned</TableHead>
-                                    <TableHead className="text-right font-medium">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -128,11 +111,17 @@ export function LeadList() {
                                 ) : (
                                     filteredLeads.map((lead) => (
                                         <TableRow
-                                            key={lead._id}
+                                            key={lead.id || lead._id}
                                             className="hover:bg-muted/30 transition-colors cursor-pointer group"
-                                            onClick={() => navigate(`/lead-dashboard/${lead._id}`)}
+                                            onClick={() => navigate(`/lead-dashboard/${lead.id || lead._id}`)}
                                         >
-                                            <TableCell>
+                                            {(() => {
+                                                const latestResponse = lead.campaign_responses && lead.campaign_responses.length > 0
+                                                    ? lead.campaign_responses[lead.campaign_responses.length - 1]
+                                                    : null;
+                                                return (
+                                                    <>
+                                                        <TableCell>
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
                                                         {lead.name.charAt(0)}
@@ -148,19 +137,17 @@ export function LeadList() {
                                                     </div>
                                                 </div>
                                             </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                    <Building2 className="h-3.5 w-3.5" />
-                                                    {lead.company || "N/A"}
-                                                </div>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {latestResponse?.campaign || "N/A"}
                                             </TableCell>
-                                            <TableCell>
-                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${statusColors[lead.status] || "bg-gray-100 text-gray-700"}`}>
-                                                    {lead.status}
-                                                </span>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {latestResponse?.source || "N/A"}
                                             </TableCell>
-                                            <TableCell className="font-medium text-foreground">
-                                                ${lead.value?.toLocaleString() || "0"}
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {latestResponse?.sub_source || "N/A"}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground text-nowrap">
+                                                {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex items-center gap-2 text-xs">
@@ -168,14 +155,9 @@ export function LeadList() {
                                                     {lead.assignedTo}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    // Handle actions
-                                                }}>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
+                                                    </>
+                                                );
+                                            })()}
                                         </TableRow>
                                     ))
                                 )}

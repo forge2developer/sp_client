@@ -7,11 +7,29 @@ const api = axios.create({
   baseURL: `${API_BASE}/api`,
 });
 
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export default api;
 
 // ─── gRPC Gateway API (for fetching data) ──────────────────────────────────────
 const grpcApi = axios.create({
   baseURL: `${API_BASE}/api/grpc`,
+});
+
+// Add request interceptor to include auth token
+grpcApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export { grpcApi, API_BASE };
@@ -25,6 +43,17 @@ export const getImageUrl = (path?: string) => {
   // Ensure we don't have double slashes
   const cleanPath = path.startsWith("/") ? path.substring(1) : path;
   return `${API_BASE}/${cleanPath}`;
+};
+
+// ─── Simple Project Cache ───
+export const projectCache: Record<string, any> = {};
+
+export const setCachedProject = (id: string, data: any) => {
+  projectCache[id] = data;
+};
+
+export const getCachedProject = (id: string) => {
+  return projectCache[id] || null;
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -62,7 +91,6 @@ export interface Project {
   _id?: string;
   id?: string;
   product_id: number;
-  organization: string;
   property: string;
   name: string;
   location?: string;
@@ -84,9 +112,76 @@ export interface User {
   email: string;
   phone: string;
   role: string;
-  organization?: string;
   profile_id?: number;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface Lead {
+  id: string;
+  _id?: string;
+  name: string;
+  email: string;
+  phone: string;
+
+  status: string;
+  value: number;
+  assignedTo: string;
+  assignedUserId?: string;
+  createdAt: string;
+  updatedAt: string;
+  project_ids?: string[];
+
+  // Dynamic fields from LeadCaptureConfig
+  location?: string;
+  street_address?: string;
+  city?: string;
+  state?: string;
+  province?: string;
+  country?: string;
+  post_code?: string;
+  zip_code?: string;
+
+  dob?: string;
+  gender?: string;
+  marital_status?: string;
+  relationship_status?: string;
+  military_status?: string;
+  education_level?: string;
+
+  job_title?: string;
+  work_phone?: string;
+  work_email?: string;
+  company?: string;
+  website?: string;
+
+  requirements?: {
+    budget?: string;
+    location?: string;
+    type?: string;
+    urgency?: string;
+    preferred_floor?: string;
+    sqft?: string;
+    bhk?: string;
+    parking_needed?: string;
+    furnishing?: string;
+    bathroom_count?: string;
+    primary_project?: string;
+    interested_projects?: string;
+  };
+
+  interestedProjects?: string[];
+  campaignResponse?: {
+    score?: number;
+    lastAction?: string;
+    status?: string;
+  };
+  campaign_responses?: Array<{
+    campaign: string;
+    source: string;
+    sub_source?: string;
+    project?: string;
+    engagedAt: string;
+  }>;
 }
