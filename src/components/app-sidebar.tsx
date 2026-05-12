@@ -33,6 +33,35 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     avatar: "/avatars/default.jpg" // Or user.avatar if available
   } : data.user
 
+  // Filter navigation items based on user role
+  const filteredNavMain = React.useMemo(() => {
+    if (!user) return []
+
+    return data.navMain.map(item => {
+      // Filter sub-items
+      const filteredItems = item.items?.filter(subItem => {
+        const roles = (subItem as any).roles
+        if (!roles) return true // Show if no roles specified
+        return roles.includes(user.role)
+      })
+
+      return {
+        ...item,
+        items: filteredItems
+      }
+    }).filter(item => {
+      // Also filter the parent item if it has roles or if it's empty after filtering sub-items (if it had items)
+      const roles = (item as any).roles
+      if (roles && !roles.includes(user.role)) return false
+      
+      // If item had sub-items but they are all filtered out, we might want to hide the parent too
+      // unless the parent itself has a valid URL to navigate to.
+      if (item.items && item.items.length === 0 && item.url === "#") return false
+      
+      return true
+    })
+  }, [user])
+
   return (
     <Sidebar
       variant="sidebar"
@@ -60,7 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent className="relative z-10 no-scrollbar">
         <NavProjects projects={data.projects} />
-        <NavMain items={data.navMain} />
+        <NavMain items={filteredNavMain} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter className="relative z-10  bg-white/50">
