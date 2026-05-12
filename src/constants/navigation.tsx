@@ -93,10 +93,12 @@ export const navigationData = {
         {
           title: "Manage Users",
           url: "/manage_users",
+          roles: ["admin"]
         },
         {
           title: "Import Data",
           url: "/import_data",
+          roles: ["admin"]
         },
       ],
     },

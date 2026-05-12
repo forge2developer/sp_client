@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Eye, EyeOff, Image, Loader2 } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { ROLES } from "@/constants/roles"
 
 export function LoginForm({
   className,
@@ -30,7 +31,9 @@ export function LoginForm({
     setIsLoading(true)
     setError("")
     try {
-      await login(email, password)
+      const userData = await login(email, password)
+      // The /dashboard route in App.tsx will automatically decide 
+      // which dashboard to show based on the user's role.
       navigate("/dashboard")
     } catch (err: any) {
       setError(err.response?.data?.message || "Invalid email or password")
