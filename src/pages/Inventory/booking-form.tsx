@@ -33,12 +33,75 @@ const FUNCTIONS = [
 ];
 const INCOME_RANGES = ["Less than 5 lakh", "5-15 lakh", "15-25 lakh", "25-50 lakh", "50 lakh and above"];
 const SOURCES = ["Advertisement", "Company Website", "Referral", "Agent", "Walk In", "Hoarding", "Others"];
-const PAYMENT_MODES = ["Own Funds", "Home Loan", "Both"];
+const PAYMENT_MODES = ["Own Funds", "Home Loan"];
 const PURPOSES = ["Own Use", "Investment", "Others"];
 const FACINGS = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"];
 
 
 const INPUT_CLS = "h-8 rounded-md border-slate-200 bg-slate-50/50 focus:bg-white transition-all text-xs font-semibold px-4";
+
+function CheckboxOption({ 
+  label, 
+  checked, 
+  onChange,
+  showBox = true 
+}: { 
+  label: string; 
+  checked: boolean; 
+  onChange: (checked: boolean) => void;
+  showBox?: boolean;
+}) {
+  return (
+    <div 
+      className={cn(
+        "flex items-center gap-2 cursor-pointer group select-none",
+        !showBox && "px-3 py-1.5 rounded-full border transition-all",
+        !showBox && checked ? "bg-red-50 border-red-200 text-red-600" : !showBox ? "bg-white border-slate-200 text-slate-600 hover:border-slate-300" : ""
+      )} 
+      onClick={() => onChange(!checked)}
+    >
+      {showBox && (
+        <div className={cn(
+          "w-4 h-4 border border-slate-300 rounded flex items-center justify-center transition-all",
+          checked ? "bg-red-600 border-red-600 text-white" : "bg-white group-hover:border-red-400"
+        )}>
+          {checked && <Check className="w-3 h-3 stroke-[4]" />}
+        </div>
+      )}
+      <span className={cn(
+        "text-[11px] font-bold transition-colors",
+        checked && showBox ? "text-slate-900" : "text-slate-600"
+      )}>{label}</span>
+    </div>
+  );
+}
+
+function InlineInput({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder = "", 
+  className = "" 
+}: { 
+  label?: string; 
+  value: string; 
+  onChange: (v: string) => void; 
+  placeholder?: string; 
+  className?: string 
+}) {
+  return (
+    <div className={cn("flex items-center gap-2", className)}>
+      {label && <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap">{label}</span>}
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 bg-transparent border-b border-slate-300 focus:border-red-500 outline-none px-1 py-0.5 text-[11px] font-semibold transition-colors min-w-[80px]"
+      />
+    </div>
+  );
+}
 
 function Field({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
@@ -265,8 +328,9 @@ export function BookingFormPage() {
   const [source, setSource] = useState("");
   const [sourceOther, setSourceOther] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
+  const [preferredBank, setPreferredBank] = useState("");
   const [purpose, setPurpose] = useState("");
-  const [existingCustomer, setExistingCustomer] = useState<"yes" | "no">("no");
+  const [existingCustomer, setExistingCustomer] = useState<"yes" | "no" | "">("");
   const [ownedProject, setOwnedProject] = useState("");
   const [ownedCity, setOwnedCity] = useState("");
 
@@ -290,7 +354,7 @@ export function BookingFormPage() {
     // Always clear applicant/lead details
     setA1Name(""); setA1Dob(undefined); setA1Relation(""); setA1Phone(""); setA1Email(""); setA1Aadhar(""); setA1Pan(""); setA1House(""); setA1Street2(""); setA1Landmark(""); setA1City(""); setA1State(""); setA1Postal(""); setA1Country("India"); setA1Image(null);
     setA2Name(""); setA2Dob(undefined); setA2Relation(""); setA2Aadhar(""); setA2Pan(""); setA2Phone(""); setA2Email(""); setA2House(""); setA2Street2(""); setA2Landmark(""); setA2City(""); setA2State(""); setA2Postal(""); setA2Country("India"); setA2Image(null);
-    setIndustry(""); setIndustryOther(""); setFunc(""); setFuncOther(""); setIncome(""); setSource(""); setSourceOther(""); setPaymentMode(""); setPurpose(""); setExistingCustomer("no"); setOwnedProject(""); setOwnedCity("");
+    setIndustry(""); setIndustryOther(""); setFunc(""); setFuncOther(""); setIncome(""); setSource(""); setSourceOther(""); setPaymentMode(""); setPreferredBank(""); setPurpose(""); setExistingCustomer(""); setOwnedProject(""); setOwnedCity("");
     setTotalAmount(""); setAdvanceAmount(""); setRemarks("");
     
     // Only clear property selection if it wasn't pre-locked (from Inventory/Lead)
@@ -320,7 +384,8 @@ export function BookingFormPage() {
           coApplicant: { name: a2Name, phone: a2Phone, email: a2Email, dob: a2Dob ? format(a2Dob, "yyyy-MM-dd") : "", relation: a2Relation, aadhar: a2Aadhar, pan: a2Pan, address: { house: a2House, street2: a2Street2, landmark: a2Landmark, city: a2City, state: a2State, postal: a2Postal, country: a2Country } },
           professional: { industry, function: func, income },
           source: source === "Others" ? sourceOther : source,
-          paymentMode, purpose, existingCustomer, ownedProject, ownedCity,
+          paymentMode: paymentMode === "Home Loan" ? `Home Loan (${preferredBank})` : paymentMode,
+          purpose, existingCustomer, ownedProject, ownedCity,
           totalAmount: totalAmount ? parseFloat(totalAmount) : undefined,
           advanceAmount: advanceAmount ? parseFloat(advanceAmount) : undefined,
           remarks,
@@ -639,82 +704,113 @@ export function BookingFormPage() {
             </div>
 
             {/* ═══ PROFESSIONAL DETAILS ═══ */}
-            <div className="px-8 md:px-10 py-8 space-y-6 border-t border-slate-100">
+            <div className="px-8 md:px-10 py-8 space-y-8 border-t border-slate-100">
               <SectionBar label="Professional Details" />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Field label="Industry">
-                  <Select value={industry || "none"} onValueChange={(v) => setIndustry(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {INDUSTRIES.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-                    </SelectContent></Select>
-                  {industry === "Others" && <Input value={industryOther} onChange={e => setIndustryOther(e.target.value)} placeholder="If others, please specify" className={`${INPUT_CLS} mt-2`} />}
-                </Field>
-                <Field label="Function">
-                  <Select value={func || "none"} onValueChange={(v) => setFunc(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {FUNCTIONS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                    </SelectContent></Select>
-                  {func === "Others" && <Input value={funcOther} onChange={e => setFuncOther(e.target.value)} placeholder="If others, please specify" className={`${INPUT_CLS} mt-2`} />}
-                </Field>
-                <Field label="Annual Income (INR)">
-                  <Select value={income || "none"} onValueChange={(v) => setIncome(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {INCOME_RANGES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                    </SelectContent></Select>
-                </Field>
+              
+              <div className="space-y-6">
+                {/* Industry */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Industry</Label>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    {INDUSTRIES.filter(i => i !== "Others").map(i => (
+                      <CheckboxOption key={i} label={i} checked={industry === i} onChange={() => setIndustry(i)} />
+                    ))}
+                    <CheckboxOption label="Others" checked={industry === "Others"} onChange={() => setIndustry("Others")} />
+                    <InlineInput label="If others, please specify" value={industryOther} onChange={setIndustryOther} className={cn("ml-2 transition-opacity", industry !== "Others" && "opacity-30 pointer-events-none")} />
+                  </div>
+                </div>
+
+                {/* Function */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Function</Label>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    {FUNCTIONS.filter(f => f !== "Others").map(f => (
+                      <CheckboxOption key={f} label={f} checked={func === f} onChange={() => setFunc(f)} />
+                    ))}
+                    <CheckboxOption label="Others" checked={func === "Others"} onChange={() => setFunc("Others")} />
+                    <InlineInput label="If others, please specify" value={funcOther} onChange={setFuncOther} className={cn("ml-2 transition-opacity", func !== "Others" && "opacity-30 pointer-events-none")} />
+                  </div>
+                </div>
+
+                {/* Income */}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Annual Income (INR)</Label>
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                    {INCOME_RANGES.map(r => (
+                      <CheckboxOption key={r} label={r} checked={income === r} onChange={() => setIncome(r)} />
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* ═══ SOURCE & PAYMENT ═══ */}
-            <div className="px-8 md:px-10 py-8 space-y-6 border-t border-slate-100">
-              <SectionBar label="Source & Payment" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Field label="How did you come to know about this Project?">
-                  <Select value={source || "none"} onValueChange={(v) => setSource(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select source" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {SOURCES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent></Select>
-                </Field>
-                {source === "Others" && <Field label="If others, please specify"><Input value={sourceOther} onChange={e => setSourceOther(e.target.value)} className={INPUT_CLS} /></Field>}
-                <Field label="Existing Customer?">
-                  <div className="flex gap-3 pt-1">
-                    {(["yes", "no"] as const).map(v => (
-                      <Button
-                        key={v}
-                        type="button"
-                        onClick={() => setExistingCustomer(v)}
-                        variant={existingCustomer === v ? "default" : "outline"}
-                        className="h-8 px-5 rounded-md text-[10px] font-black tracking-widest"
-                      >
-                        {v.toUpperCase()}
-                      </Button>
+            <div className="px-8 md:px-10 py-8 space-y-8 border-t border-slate-100">
+              <SectionBar label="Source, Payment & Purpose" />
+              
+              <div className="space-y-8">
+                {/* How did you come to know */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">How did you come to know about this Project?</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-8">
+                    {SOURCES.map(s => (
+                      <CheckboxOption key={s} label={s} checked={source === s} onChange={() => setSource(s)} />
                     ))}
+                    {source === "Others" && (
+                      <InlineInput label="If others, Please specify" value={sourceOther} onChange={setSourceOther} className="col-span-full mt-2" />
+                    )}
                   </div>
-                </Field>
-                {existingCustomer === "yes" && (
-                  <>
-                    <Field label="Owned Project Name"><Input value={ownedProject} onChange={e => setOwnedProject(e.target.value)} className={INPUT_CLS} /></Field>
-                    <Field label="City"><Input value={ownedCity} onChange={e => setOwnedCity(e.target.value)} className={INPUT_CLS} /></Field>
-                  </>
-                )}
-                <Field label="Mode of Payment / Source">
-                  <Select value={paymentMode || "none"} onValueChange={(v) => setPaymentMode(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {PAYMENT_MODES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent></Select>
-                </Field>
-                <Field label="Purpose of Purchase">
-                  <Select value={purpose || "none"} onValueChange={(v) => setPurpose(v === "none" ? "" : v)}><SelectTrigger className={INPUT_CLS}><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-xs font-bold italic text-muted-foreground">None</SelectItem>
-                      {PURPOSES.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent></Select>
-                </Field>
+                </div>
+
+                {/* Existing Customer */}
+                <div className="space-y-4">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Existing RC SPP Customer?</Label>
+                  <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                    <div className="flex gap-6">
+                      <CheckboxOption label="Yes" checked={existingCustomer === "yes"} onChange={() => setExistingCustomer("yes")} />
+                      <CheckboxOption label="No" checked={existingCustomer === "no"} onChange={() => setExistingCustomer("no")} />
+                    </div>
+                    
+                    {existingCustomer === "yes" && (
+                      <div className="flex flex-wrap items-center gap-6 flex-1">
+                        <InlineInput label="If yes, Owned Project Name:" value={ownedProject} onChange={setOwnedProject} className="flex-1" />
+                        <InlineInput label="City:" value={ownedCity} onChange={setOwnedCity} className="flex-1" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Mode of Payment & Purpose */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Mode of Payment/Source</Label>
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                      <CheckboxOption label="Own Funds" checked={paymentMode === "Own Funds"} onChange={() => setPaymentMode("Own Funds")} />
+                      <div className="flex items-center gap-2">
+                        <CheckboxOption label="Home Loan" checked={paymentMode === "Home Loan"} onChange={() => setPaymentMode("Home Loan")} />
+                        <div className={cn("flex items-center gap-1 transition-opacity", paymentMode !== "Home Loan" && "opacity-30 pointer-events-none")}>
+                          <span className="text-[11px] font-bold text-slate-700 whitespace-nowrap ml-2">(Preferred Bank/HFI</span>
+                          <input
+                            type="text"
+                            value={preferredBank}
+                            onChange={(e) => setPreferredBank(e.target.value)}
+                            className="bg-transparent border-b border-slate-300 focus:border-red-500 outline-none px-1 py-0.5 text-[11px] font-semibold transition-colors w-32"
+                          />
+                          <span className="text-[11px] font-bold text-slate-700">)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-foreground/70">Purpose of Purchase</Label>
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+                      {PURPOSES.map(p => (
+                        <CheckboxOption key={p} label={p} checked={purpose === p} onChange={() => setPurpose(p)} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
