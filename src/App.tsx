@@ -4,7 +4,6 @@ import DashboardLayout from "./layouts/sidebar-layout"
 import { LoginForm } from "./pages/Auth/auth-page"
 import { FogotPasswordPage } from "./pages/Auth/forgot-password-form"
 import DashboardPage from "./pages/Dashboard/dashboard-page"
-import Admin_dashboard from "./pages/Dashboard/Admin_dashboard"
 import { InventoryHub } from "./pages/Inventory/inventory-hub"
 import { InventoryListing } from "./pages/Inventory/inventory-listing"
 import { AddInventory } from "./pages/Inventory/add-inventory"
@@ -12,7 +11,7 @@ import { BookingFormPage } from "./pages/Inventory/booking-form"
 import GeneralSettings from "./pages/Settings/GeneralSettings"
 import ImportData from "./pages/Settings/ImportData"
 import ManageUsers from "./pages/Settings/ManageUsers"
-import {LeadList} from "./pages/Leads/LeadList"
+import { LeadList } from "./pages/Leads/LeadList"
 import { AddLead } from "./pages/Leads/AddLead"
 import { LeadHub } from "./pages/Leads/LeadHub"
 import { LeadDashboard } from "./pages/Leads/LeadDashboard"
@@ -27,10 +26,7 @@ import ToolsHub from "./pages/Tools/tools-hub"
 import ProfilePage from "./pages/Profile/profile-page"
 import { ReportPage } from "./pages/Reports/Report-page"
 import ProtectedRoute from "./components/ProtectedRoute"
-import RoleProtectedRoute from "./components/RoleProtectedRoute"
 import CalendarView from "./pages/Calandar/calendar_view"
-import { useAuth } from "./context/AuthContext"
-import { ROLES } from "./constants/roles"
 
 
 export function App() {
@@ -47,7 +43,7 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           {/* Dashboard Routes (Inside Sidebar) */}
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<DashboardContent />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
 
           {/* Inventory Routes */}
@@ -82,11 +78,8 @@ export function App() {
           {/*Setting Routes*/}
           <Route element={<DashboardLayout />}>
             <Route path="/general_settings" element={<GeneralSettings />} />
-            {/* Admin only settings */}
-            <Route element={<RoleProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.MANAGER]} />}>
-              <Route path="/manage_users" element={<ManageUsers />} />
-              <Route path="/import_data" element={<ImportData />} />
-            </Route>
+            <Route path="/manage_users" element={<ManageUsers />} />
+            <Route path="/import_data" element={<ImportData />} />
           </Route>
 
           {/*Report  */}
@@ -97,7 +90,7 @@ export function App() {
           <Route element={<DashboardLayout />}>
             <Route path="/calendar_view" element={<CalendarView />} />
           </Route>
-    
+
           {/* Profile & Duplicate Routes */}
           <Route element={<DashboardLayout />}>
             <Route path="/profile" element={<ProfilePage />} />
@@ -110,15 +103,6 @@ export function App() {
       </Routes>
     </BrowserRouter>
   )
-}
-
-function DashboardContent() {
-  const { user } = useAuth()
-  
-  if (user?.role === ROLES.ADMIN) {
-    return <Admin_dashboard />
-  }
-  return <DashboardPage />
 }
 
 export default App

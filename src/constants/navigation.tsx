@@ -59,7 +59,7 @@ export const navigationData = {
           title: "Third party Integrations",
           url: "/third_party_integrations",
         },
-       ],
+      ],
     },
     // {
     //   title: "Documentation",
@@ -93,12 +93,10 @@ export const navigationData = {
         {
           title: "Manage Users",
           url: "/manage_users",
-          roles: ["admin"]
         },
         {
           title: "Import Data",
           url: "/import_data",
-          roles: ["admin"]
         },
       ],
     },
